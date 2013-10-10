@@ -5,6 +5,13 @@ import numpy as np
 import datetime
 
 
+def dtobj2xl(date_obj):
+    base_day=datetime.datetime(1899,12,30)
+    elapsed=date_obj-base_day
+    xltime=elapsed.total_seconds()/(24*3600)
+    return xltime
+    
+
 def xl2dtobj(xl_date,datemode):
     return (datetime.datetime(1899,12,30)+ datetime.timedelta(days=xl_date + 1462 * datemode))
 

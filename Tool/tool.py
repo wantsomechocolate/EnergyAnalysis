@@ -34,7 +34,7 @@ num_matches=6
 ##working_directory="C:/Users/James McGlynn/Documents/GitHub/Utility Analysis/Weather/"
 ## working dir is the the directory this program runs in.
 ##book_name="Hourly_Wetbulb.xlsx"
-book_name='data_template.xlsx'
+book_name='230ParkSteamTempSep12-Aug13.xlsx'
 #weather_book_path=working_directory+book_name
 
 ##------------------------------------------------
@@ -313,19 +313,28 @@ for i in range(len(interval_usage_by_day)):
 ##            else:
         end_time_each_day.append(end_time)
     else:
+        ## the case that the program gets here on the last element of the array being indexed by i
+        ## needs to be coded for. 
         ## If it fails it most likely means that the end time occurs the next day - at least for the data set that I'm using.
-        for j in range(len(interval_usage_by_day[i+1])):
-            if found_end_time=="No":
-                if interval_usage_by_day[i+1][j]<baseline_by_day[i][j]*(1+percent_above_baseline):
-                    found_end_time=="Yes"
-                    end_time=interval_time_by_day[i+1][j]
-               
+
+        try:
+
+            for m in range(len(interval_usage_by_day[i+1])): #next day
+                if found_end_time=="No":
+                    if interval_usage_by_day[i+1][m]<baseline_by_day[i+1][m]*(1+percent_above_baseline):
+                        found_end_time="Yes"
+                        end_time=interval_time_by_day[i+1][m]
+
+        ## Last Day no Shutdown
+        except:
+            end_time="LDNSD"
+            
         end_time_each_day.append(end_time)
         
 
 
 
-
+## The above works ok, maybe I should plot the previous days basline in orange or something to show more info.
 
 
 ################################
@@ -338,84 +347,84 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 
 ##-----------------------------Printing Shit to Excel------------------------------
 
-##############print "Printing results to excel: ",
-################ Pick excel destination book name
-##############
-##############interval_averages=[]
-##############interval_upper_bound=[]
-##############interval_lower_bound=[]
-##############interval_std=[]
-##############for i in range(len(year_of_average_days)):
-##############    for j in range(len(year_of_average_days[i])):
-##############        interval_averages.append(year_of_average_days[i][j])
-##############        interval_upper_bound.append(year_of_std_upper[i][j])
-##############        interval_lower_bound.append(year_of_std_lower[i][j])
-##############        interval_std.append(year_of_std[i][j])
-##############
-##############
-##############
-###############output_book=working_directory+"interval_analysis_results.xlsx"
-##############output_book='interval_analysis_results.xlsx'
-##############
-##############column_headings=["Time Stamp","Electric(kWh)","Mlbs Steam","Average Mlbs Steam","Stdev","Ave+Std","Ave-Std"]
-##############output_list=[interval_time,interval_usage, interval_usage_2,interval_averages,interval_std,interval_upper_bound,interval_lower_bound]
-##############
-##############
-##############wb = Workbook()
-##############
-###############ws=wb.get_active_sheet()
-##############ws1=wb.create_sheet(0,"Interval Analysis")
-################ for all headings i
-##############for i in range(len(column_headings)):
-##############    c=ws1.cell(row=0,column=i)
-##############    c.value=column_headings[i]
-##############
-##############    ## for all rows j+1
-##############    for j in range(len(output_list[i])):
-##############        c=ws1.cell(row=j+1,column=i)
-##############        c.value=output_list[i][j]
-##############
-##############
-##############
-##############ts_year_of_days=[]
-##############day_of_year=[]
-##############for day_of_hours in ts_by_day:
-##############    try:
-##############        ts_year_of_days.append(day_of_hours[0])
-##############        day_of_year.append(day_of_hours[0].timetuple()[7])
-##############    except:
-##############        ts_year_of_days.append("err")
-##############        day_of_year.append("err")
-##############                    
-##############similar_days_by_day_string_list=[]
-##############for day in similar_days_by_day:
-##############    inter_string=""
-##############    for sim_day in day:
-##############        inter_string=inter_string+str(sim_day)+","
-##############        
-##############    similar_days_by_day_string_list.append(inter_string)
-##############
-##############
-##############day_anal_headings=["Time Stamp","Day of Year","Wetbulb Temp","Similar Days"]
-##############output_list_by_day=[ts_year_of_days,day_of_year,wbt_daily_ave,similar_days_by_day_string_list]
-##############
-##############ws2=wb.create_sheet(-1,"Day Analysis")
-##############
-##############for i in range(len(day_anal_headings)):
-##############    c2=ws2.cell(row=0,column=i)
-##############    c2.value=day_anal_headings[i]
-##############
-##############    for j in range(len(output_list_by_day[i])):
-##############        c2=ws2.cell(row=j+1,column=i)
-##############        c2.value=output_list_by_day[i][j]
-##############    
-##############    
-##############wb.save(output_book)
-##############
-################--------------------------------------------------------
-##############time_list.append(time.time())
-##############print str(round(time_list[-1]-time_list[-2],1))+" seconds"
-################--------------------------------------------------------
+print "Printing results to excel: ",
+## Pick excel destination book name
+
+interval_averages=[]
+interval_upper_bound=[]
+interval_lower_bound=[]
+interval_std=[]
+for i in range(len(year_of_average_days)):
+    for j in range(len(year_of_average_days[i])):
+        interval_averages.append(year_of_average_days[i][j])
+        interval_upper_bound.append(year_of_std_upper[i][j])
+        interval_lower_bound.append(year_of_std_lower[i][j])
+        interval_std.append(year_of_std[i][j])
+
+
+
+#output_book=working_directory+"interval_analysis_results.xlsx"
+output_book='230ParkSteamResults.xlsx'
+
+column_headings=["Time Stamp","Electric(kWh)","Mlbs Steam","Average Mlbs Steam","Stdev","Ave+Std","Ave-Std"]
+output_list=[interval_time,interval_usage, interval_usage_2,interval_averages,interval_std,interval_upper_bound,interval_lower_bound]
+
+
+wb = Workbook()
+
+#ws=wb.get_active_sheet()
+ws1=wb.create_sheet(0,"Interval Analysis")
+## for all headings i
+for i in range(len(column_headings)):
+    c=ws1.cell(row=0,column=i)
+    c.value=column_headings[i]
+
+    ## for all rows j+1
+    for j in range(len(output_list[i])):
+        c=ws1.cell(row=j+1,column=i)
+        c.value=output_list[i][j]
+
+
+
+ts_year_of_days=[]
+day_of_year=[]
+for day_of_hours in ts_by_day:
+    try:
+        ts_year_of_days.append(day_of_hours[0])
+        day_of_year.append(day_of_hours[0].timetuple()[7])
+    except:
+        ts_year_of_days.append("err")
+        day_of_year.append("err")
+                    
+similar_days_by_day_string_list=[]
+for day in similar_days_by_day:
+    inter_string=""
+    for sim_day in day:
+        inter_string=inter_string+str(sim_day)+","
+        
+    similar_days_by_day_string_list.append(inter_string)
+
+
+day_anal_headings=["Time Stamp","Day of Year","Wetbulb Temp","Similar Days"]
+output_list_by_day=[ts_year_of_days,day_of_year,wbt_daily_ave,similar_days_by_day_string_list]
+
+ws2=wb.create_sheet(-1,"Day Analysis")
+
+for i in range(len(day_anal_headings)):
+    c2=ws2.cell(row=0,column=i)
+    c2.value=day_anal_headings[i]
+
+    for j in range(len(output_list_by_day[i])):
+        c2=ws2.cell(row=j+1,column=i)
+        c2.value=output_list_by_day[i][j]
+    
+    
+wb.save(output_book)
+
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
 
 ## ----------------------------Plotting Suff-------------------------------------
 print "Starting plot module, exit graph and go to interpreter to plot another day"

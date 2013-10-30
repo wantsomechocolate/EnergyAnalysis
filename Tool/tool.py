@@ -1,74 +1,78 @@
+## Interval Data Analysis Tool - Written by James McGlynn on his own time, on his own computer, while working
+## for CodeGreen Solutions. Circa 2013 (Jun - November)
+
+## This analysis should really use a minimum of two years of data.
+
+## Future Considerations are:
+## 1.)  Better automate creation of spreadsheet for use by tool
+## 2.)  Fix Graphing Utility for easy exploration of results
+## 3.)  Retrive holidays automatically and remove them from analysis of similar weather days.
+## 4.)  Enhance the comparison of weather conditions - use more prior days (2 or three at most)
+##          and try to compare at every point instead of using a daily average.
+## 5.)  Create an exe to run using excel macro that will do the analysis all in excel.
+## 6.)  Make standard deviation directional
+## 7.)  Make number of similar days to be used in analysis dependant upon number of total days
+
+## -------------------IMPORTS--------------------
+
 import datetime, os, wam, time
 import numpy as np
 import pylab as pl
+from marbles import glass as chan
 
 from openpyxl import Workbook
 from openpyxl import load_workbook
 
-## The goal is now to print to excel all the results.
-## I also want to make the program pull from a single source sheet.
-## what do I want to output though?
-## This takes weather data and picks the similar days, so on the weather side, I want to output the similar days
-## for every hour
-## On the energy side, I want to output the average, standard dev, up, down, and similar days used for each interval. 
+## ------------------Let's Begin-----------------
 
-## Important Declarations
-holidays=[2,        ## New Day
-         16,        ## MLK Day
-         51,        ## Pres Day
-         149,       ## Mem Day
-         186,       ## Indy Day
-         247,       ## Lab Day
-         282,       ## Col Day
-         317,       ## Vets Day
-         327,       ## Thanks Day
-         328,       ## Coma Day
-         360        ## Christ Day
-        ]
+## Returns 2012 and 2013 Federal Holidays as a list of datetime objects.
+holidays = wam.getholidays()
 
+## How many similar days do you want to return? Three per year of data might be ok. 
+num_matches=5
 
-## How many similar days do you want to return?
-num_matches=6
+## Ask user to navigate to file 
+book_name=chan.getPath(os.getcwd())
 
-## Boring prelim stuff
-##working_directory="C:/Users/James McGlynn/Documents/GitHub/Utility Analysis/Weather/"
-## working dir is the the directory this program runs in.
-##book_name="Hourly_Wetbulb.xlsx"
-book_name='230ParkSteamTempSep12-Aug13.xlsx'
-#weather_book_path=working_directory+book_name
-
+## (Time keeping stuff - not important)
 ##------------------------------------------------
 time_list=[]
 time_list.append(time.time())
 ##------------------------------------------------
 
+
 ## ---------------------------Get data from spreadsheet-----------------------------
 
 print "Retrieving weather data from "+book_name+": ",
 
+## Unfortunately I have to rely on this being true :(
 weather_sheet_name='Interval Temp'
+## This shouldn't be necessary
 number_of_columns=2
 
 ## This function returns a list of two lists
 tstamp_wbulb=wam.xlsx2np(book_name, weather_sheet_name, number_of_columns)
 
-## The first is hourly time stamp
+## The first is hourly time stamp - I checked and these things come out in order form oldest to newest
 time_stamp_np=tstamp_wbulb[0]
 
 ## The second is hourly wetbulb temp
 wbt_np=tstamp_wbulb[1]
 
+
 ## Use the data from the spreadsheet to define a list that has the date starting from start date to end date
 ## In case there are gaps. At the moment the data has to be in date order oldest to newest. 
 current_date=time_stamp_np[0]
 end_date=time_stamp_np[-1]
-date_list=[]
+date_list=[] # - I checked and this is also in order from oldest to newest
 while current_date<=end_date:
     date_list.append(current_date)
     current_date=current_date+datetime.timedelta(days=1)
 
+#----------------------------------------------------------
 time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+#----------------------------------------------------------
 
 ## ------------------Get the average wet bulb temperature for each day---------------
 print "Finding the average wetbulb temperature for each day: ",
@@ -79,12 +83,12 @@ print "Finding the average wetbulb temperature for each day: ",
 by_day=wam.interval2day(time_stamp_np,wbt_np)
 
 ## One list of the time stamp BY DAY 
-ts_by_day=by_day[0]
+ts_by_day=by_day[0] #----this now comes out in order
 
 ## One list of the wetbulb temp BY DAY
 wbt_by_day=by_day[1]
 
-## This function days a list of lists and returns a list of averages
+## This function takes a list of lists and returns a list of averages
 wbt_daily_ave=wam.list_of_lists_2_list_of_ave(wbt_by_day)
 
 #-----------------------------------------------------------
@@ -97,8 +101,25 @@ print "Finding similar days based on a single criteria (Average WBT): ",
 
 ## This function takes a list of numbers, the number of closest matches to get, and a date list
 ## The date list is used as a criteria because I actually only want to consider
-## Similar WB temps that occur on the same day of the week. 
+## Similar WB temps that occur on the same day of the week.
+
 similar_days_by_day=wam.get_n_closest_matches_for_each_item_in_list(wbt_daily_ave, num_matches, date_list, holidays)
+
+## make a list with the right dimensions
+similar_days_by_DATE=[]
+for i in range(len(similar_days_by_day)):
+    similar_days_by_DATE.append([])
+
+## Becase the get_n_closest..... functions returns a list of list indices instead of a list of datetime objects
+## Use those indicies to get the corresponding datetime objects.
+for i in range(len(similar_days_by_day)):
+    for j in range(len(similar_days_by_day[i])):
+        similar_days_by_DATE[i].append(date_list[similar_days_by_day[i][j]])
+
+## For printing purposes
+similar_days_by_DATE_zipped = zip(*similar_days_by_DATE)
+
+
 
 #----------------------------------------------------------
 time_list.append(time.time())
@@ -109,23 +130,23 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 
 print "Retrieving interval data from spreadsheet: ",
 
-#interval_book_path="C:/Users/James McGlynn/My Programs/Python Programs/Utility Data Analysis/Interval Data/interval_data_2012.xlsx"
-#book path is the same
-
+## Must be true
 interval_data_sheet_name='Interval Usage'
 
+## Shouldn't be necessary
 number_of_columns=3
 
-## This function returns a list of two lists
+## This function returns a list of lists
 interval_data=wam.xlsx2np(book_name, interval_data_sheet_name,number_of_columns)
 
 ## The first is interval time stamp
 interval_time=interval_data[0]
 
-## The second is interval data (in this case steam)
-interval_usage=interval_data[1]
+## The second is interval data (in this case electric)
+interval_usage_elec=interval_data[1]
 
-interval_usage_2=interval_data[2]
+## The third if it is there is probably steam
+interval_usage_steam=interval_data[2]
 
 #---------------------------------------------------------------
 time_list.append(time.time())
@@ -135,23 +156,40 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 
 print "Breaking up interval data by day: ",
 
-## This function also returns a list of two lists
-interval_by_day=wam.interval2day(interval_time,interval_usage)
+## This function also returns a list of two lists, I have to call it twice right now because
+## I'm assuming there will always be exactly two streams of data (STUPID!)
+interval_by_day_elec=wam.interval2day(interval_time,interval_usage_elec)
+
+## Calling it again for steam - pretty redundant, I should fix this
+interval_by_day_steam=wam.interval2day(interval_time,interval_usage_steam)
 
 ## One list of the time stamp BY DAY 
-interval_time_by_day=interval_by_day[0]
+interval_time_by_day_elec=interval_by_day_elec[0]
 
-## One list of the wetbulb temp BY DAY
-interval_usage_by_day=interval_by_day[1]
+## One list of the elec usage BY DAY
+interval_usage_by_day_elec=interval_by_day_elec[1]
 
+## A list of the time stamp for steam (Will always be identical to the electric one)
+interval_time_by_day_steam=interval_by_day_steam[0]
+
+## A list of the steam usage BY DAY
+interval_usage_by_day_steam=interval_by_day_steam[1]
+
+#-------------------------------------------------------------
 time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+#-------------------------------------------------------------
+
 
 ##---------------------Apply weather findings to interval data---------------------
 
 print "Gathering interval usage for days that had similar weather: ",
 
-similar_days_interval_usage=wam.use_list_of_list_of_indices_to_group_a_list_of_lists(interval_usage_by_day,similar_days_by_day)
+## Function name is pretty weak, you probably get what it's doing
+similar_days_interval_usage_elec=wam.use_list_of_list_of_indices_to_group_a_list_of_lists(interval_usage_by_day_elec,similar_days_by_day)
+
+## And one for steam two, these functions should just be able to handle different lists
+similar_days_interval_usage_steam=wam.use_list_of_list_of_indices_to_group_a_list_of_lists(interval_usage_by_day_steam,similar_days_by_day)
 
 ##--------------------------------------------------------
 time_list.append(time.time())
@@ -161,20 +199,100 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##----------------------Do simple stat calcs------------------------------------
 
 print "Reorganizing the data and calculating average and stdev for each interval value: ",
-## Reorganizing the data to make it easier to get average days and calculate std and stuff
-similar_days_interval_usage_by_interval=wam.zip_all_items_of_a_list(similar_days_interval_usage)
+
+## Reorganizing the data to make it easier to get average days and calculate stdev and stuff
+similar_days_interval_usage_by_interval_elec=wam.zip_all_items_of_a_list(similar_days_interval_usage_elec)
+
+## And again for steeeeeaaaaam (lame)
+similar_days_interval_usage_by_interval_steam=wam.zip_all_items_of_a_list(similar_days_interval_usage_steam)
 
 ## This function returns a list with three lists that are the same shape as orig list except the deepest list turned into a number
-stats=wam.get_ave_std_of_list_of_list_of_list(similar_days_interval_usage_by_interval)
-## Average
-year_of_average_days=stats[0]
-## Upper bound
-year_of_std_upper=stats[1]
-## Lower bound
-year_of_std_lower=stats[2]
-## STD
-year_of_std=stats[3]
+stats_elec=wam.get_ave_std_of_list_of_list_of_list(similar_days_interval_usage_by_interval_elec)
 
+## Average
+year_of_average_days_elec=stats_elec[0]
+
+## Upper bound - Can be done in excel, don't bother
+year_of_std_upper_elec=stats_elec[1]
+
+## Lower bound - Can be done in excel, don't bother
+year_of_std_lower_elec=stats_elec[2]
+
+## Standard deviation
+year_of_std_elec=stats_elec[3]
+
+## And now for steam!
+stats_steam=wam.get_ave_std_of_list_of_list_of_list(similar_days_interval_usage_by_interval_steam)
+
+
+######The above line is getting an error use this code to check for the cause
+######for i in range(len(similar_days_interval_usage_by_interval_steam)):
+######	for j in range(len(similar_days_interval_usage_by_interval_steam[i])):
+######		if None in similar_days_interval_usage_by_interval_steam[i][j]:
+######			print i,j
+
+########for item in sample_list_np:
+########	try:
+########		new_list.append(float(item))
+########	except:
+########		pass
+
+
+year_of_average_days_steam=stats_steam[0]
+year_of_std_upper_steam=stats_steam[1]
+year_of_std_lower_steam=stats_steam[2]
+year_of_std_steam=stats_steam[3]
+
+
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
+
+print "Getting the baseline for each day",
+
+## get baseline by day Or should it be for the morning?
+
+## All of these parameters were based on a single data set. This section of the program really needs some work. 
+num_of_min_values=10
+start_time=1*4
+end_time=12*4 #12 noon - this way the baseline isn't thrown off by values happening at end of day
+
+baseline_by_day_elec=wam.get_baseline_by_day(interval_usage_by_day_elec,num_of_min_values, start_time, end_time)
+
+baseline_by_day_steam=wam.get_baseline_by_day(interval_usage_by_day_steam,num_of_min_values, start_time, end_time)
+
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
+
+print "Getting the startup time for each day",
+
+percent_above_baseline=0.03
+
+thresh=8
+
+start_time_each_day_elec=wam.get_start_time_each_day(interval_time_by_day_elec, interval_usage_by_day_elec, baseline_by_day_elec, percent_above_baseline, thresh)
+
+start_time_each_day_steam=wam.get_start_time_each_day(interval_time_by_day_steam, interval_usage_by_day_steam, baseline_by_day_steam, percent_above_baseline, thresh)
+
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
+
+print "Getting the shutdown time for each day",
+
+thresh_end=1
+
+percent_above_baseline=0.03
+
+end_time_each_day_elec=wam.get_end_time_each_day(interval_time_by_day_elec, interval_usage_by_day_elec, baseline_by_day_elec, start_time_each_day_elec, percent_above_baseline, thresh_end)
+
+end_time_each_day_steam=wam.get_end_time_each_day(interval_time_by_day_steam, interval_usage_by_day_steam, baseline_by_day_steam, start_time_each_day_steam, percent_above_baseline, thresh_end)
+
+## The above works ok, maybe I should plot the previous days basline in orange or something to show more info.
 
 ##--------------------------------------------------------
 time_list.append(time.time())
@@ -185,190 +303,36 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 print "The total runtime to this point was: "+str(round(time_list[-1]-time_list[0],1))+" seconds"
 ##--------------------------------------------------------
 
-
-## get baseline by day Or should it be for the morning?
-print "Getting the baseline for each day"
-num_of_min_values=10
-start_time=1*4
-end_time=12*4 #12 noon - this way the baseline isn't thrown off by values happening at end of day
-baseline_by_day=wam.get_baseline_by_day(interval_usage_by_day,num_of_min_values, start_time, end_time)
-
-
-print "Getting the startup time for each day",
-percent_above_baseline=0.03
-count=0
-thresh=8
-#start_time=[]
-start_time_each_day=[]
-
-## for every day
-for i in range(len(interval_usage_by_day)):
-
-    found_start_time="No"
-    start_time=[]
-    count=0
-
-    ## for every 15 minute period
-    for j in range(len(interval_usage_by_day[i])):
-        
-        
-
-        ##if the usage during the 15 minutes is greater than a percentage more than the baseline
-        if interval_usage_by_day[i][j]>baseline_by_day[i][j]*(1+percent_above_baseline):
-            ## increase count
-            count=count+1
-        else:
-            ## otherwise reset count
-            count=0
-
-        ## at this point, count could be from 0 to 96 (every value higher than baseline)
-
-        ## if at any point it becomes greater than thresh and it hasn't before today
-        if count>=thresh and found_start_time=="No":
-            ## say that the start time occured when the increase started
-            start_time=interval_time_by_day[i][j-thresh]
-
-            ## and say that a start time was found for the day
-            found_start_time="Yes"
-
-    if found_start_time=="Yes":
-        if start_time.hour==0:
-            start_time_each_day.append("err")
-        else:
-            start_time_each_day.append(start_time)
-    else:
-        start_time_each_day.append("N/A")
-
-        
-##--------------------------------------------------------
-time_list.append(time.time())
-print str(round(time_list[-1]-time_list[-2],1))+" seconds"
-##--------------------------------------------------------
-
-
-print "Getting the shutdown time for each day",
-
-################################
-
-
-
-
-
-
-#percent_above_baseline=0.03
-count=0
-thresh_end=1
-#end_time=[]
-end_time_each_day=[]
-start_time_each_day_copy=list(start_time_each_day)
-
-## for every day
-for i in range(len(interval_usage_by_day)):
-
-    ## Refresh some vars
-    found_end_time="No"
-    end_time=[]
-    count=0
-
-    ## for every 15 minute period
-    for j in range(len(interval_usage_by_day[i])):
-
-
-        try:
-            test=start_time_each_day_copy[i].hour
-        except:
-            start_time_each_day_copy[i]=interval_time_by_day[i][40]
-
-        ## If the 15 minute period in question is not even passed the start time
-        if interval_time_by_day[i][j]<=start_time_each_day_copy[i]:
-
-            ## Then don't do anything. 
-            pass
-
-        ## Otherwise, begin/continue the analysis. 
-        else:
-        
-            ##if the usage during the 15 minutes is less than a percentage more than the baseline
-            if interval_usage_by_day[i][j]<baseline_by_day[i][j]*(1+percent_above_baseline):
-                ## increase count
-                count=count+1
-            else:
-                ## otherwise reset count
-                count=0
-
-            ## at this point, count could be from 0 to 96 minus the number of points that fell before the start time
-
-            ## if at any point it becomes greater than or equal to thresh and it hasn't before today
-            if count>=thresh_end and found_end_time=="No":
-                
-                ## say that the end time occured when thresh was met
-                end_time=interval_time_by_day[i][j-thresh_end]
-
-                ## and say that an end time was found for the day
-                found_end_time="Yes"
-
-    if found_end_time=="Yes":
-##            if end_time.hour==0:
-##                end_time_each_day.append("err")
-##            else:
-        end_time_each_day.append(end_time)
-    else:
-        ## the case that the program gets here on the last element of the array being indexed by i
-        ## needs to be coded for. 
-        ## If it fails it most likely means that the end time occurs the next day - at least for the data set that I'm using.
-
-        try:
-
-            for m in range(len(interval_usage_by_day[i+1])): #next day
-                if found_end_time=="No":
-                    if interval_usage_by_day[i+1][m]<baseline_by_day[i+1][m]*(1+percent_above_baseline):
-                        found_end_time="Yes"
-                        end_time=interval_time_by_day[i+1][m]
-
-        ## Last Day no Shutdown
-        except:
-            end_time="LDNSD"
-            
-        end_time_each_day.append(end_time)
-        
-
-
-
-## The above works ok, maybe I should plot the previous days basline in orange or something to show more info.
-
-
-################################
-
-##--------------------------------------------------------
-time_list.append(time.time())
-print str(round(time_list[-1]-time_list[-2],1))+" seconds"
-##--------------------------------------------------------
-
-
 ##-----------------------------Printing Shit to Excel------------------------------
 
 print "Printing results to excel: ",
-## Pick excel destination book name
 
-interval_averages=[]
-interval_upper_bound=[]
-interval_lower_bound=[]
-interval_std=[]
-for i in range(len(year_of_average_days)):
-    for j in range(len(year_of_average_days[i])):
-        interval_averages.append(year_of_average_days[i][j])
-        interval_upper_bound.append(year_of_std_upper[i][j])
-        interval_lower_bound.append(year_of_std_lower[i][j])
-        interval_std.append(year_of_std[i][j])
+## Printing the interval analysis results
 
+interval_averages_elec=[]
+#interval_upper_bound_elec=[]
+#interval_lower_bound_elec=[]
+interval_std_elec=[]
+for i in range(len(year_of_average_days_elec)):
+    for j in range(len(year_of_average_days_elec[i])):
+        interval_averages_elec.append(year_of_average_days_elec[i][j])
+        #interval_upper_bound_elec.append(year_of_std_upper_elec[i][j])
+        #interval_lower_bound_elec.append(year_of_std_lower_elec[i][j])
+        interval_std_elec.append(year_of_std_elec[i][j])
 
+interval_averages_steam=[]
+interval_std_steam=[]
+for i in range(len(year_of_average_days_steam)):
+    for j in range(len(year_of_average_days_steam[i])):
+        interval_averages_steam.append(year_of_average_days_steam[i][j])
+        interval_std_steam.append(year_of_std_steam[i][j])
 
 #output_book=working_directory+"interval_analysis_results.xlsx"
-output_book='230ParkSteamResults.xlsx'
+##output_book='230ParkResults'+str(int(time.time()))+'.xlsx'
+output_book=chan.add_to_filename(book_name," - Results - "+str(int(time.time())))
 
-column_headings=["Time Stamp","Electric(kWh)","Mlbs Steam","Average Mlbs Steam","Stdev","Ave+Std","Ave-Std"]
-output_list=[interval_time,interval_usage, interval_usage_2,interval_averages,interval_std,interval_upper_bound,interval_lower_bound]
-
+column_headings=["Time Stamp","Electric(kWh)","Average Elec(kWh)","STD Elec(kWh)","lbs Steam","Average lbs Steam","Stdev lbs steam"]
+output_list=[interval_time,interval_usage_elec, interval_averages_elec,interval_std_elec, interval_usage_steam,interval_averages_steam, interval_std_steam]
 
 wb = Workbook()
 
@@ -384,30 +348,69 @@ for i in range(len(column_headings)):
         c=ws1.cell(row=j+1,column=i)
         c.value=output_list[i][j]
 
-
+#--------------------------------------------------------------------
+## Printing the daily analysis results
 
 ts_year_of_days=[]
-day_of_year=[]
+
+#ts_by_day is a list of every day - each day containing a list of each hour - each hour containing a datetime object for that hour
+# That means that for every iteration of the loop below, day_of_hours will contain a list of 24 datetime objects.
 for day_of_hours in ts_by_day:
     try:
+        #Try to append a single datetime object per day
         ts_year_of_days.append(day_of_hours[0])
-        day_of_year.append(day_of_hours[0].timetuple()[7])
-    except:
-        ts_year_of_days.append("err")
-        day_of_year.append("err")
-                    
-similar_days_by_day_string_list=[]
-for day in similar_days_by_day:
-    inter_string=""
-    for sim_day in day:
-        inter_string=inter_string+str(sim_day)+","
+        # and also add the day of the year to day_of_year - this should be changed, it doesn't work when crossing over from year to year
+        #day_of_year.append(day_of_hours[0].timetuple()[7])
         
-    similar_days_by_day_string_list.append(inter_string)
+    except:
+        # If the above fails, it most likely means that there was no data for the day in question, just append "err"
+        ts_year_of_days.append("err")
+        #day_of_year.append("err")
+           
+######similar_days_by_day_string_list=[]
+######for day in similar_days_by_day:
+######    inter_string=""
+######    for sim_day in day:
+######        inter_string=inter_string+str(sim_day)+","
+######        
+######    similar_days_by_day_string_list.append(inter_string)
 
+day_anal_headings=["Day","Ave Wetbulb Temp"]
 
-day_anal_headings=["Time Stamp","Day of Year","Wetbulb Temp","Similar Days"]
-output_list_by_day=[ts_year_of_days,day_of_year,wbt_daily_ave,similar_days_by_day_string_list]
+for i in range(num_matches):
+    day_anal_headings.append("Sim Day "+str(i+1))
+    day_anal_headings.append("Sim Day "+str(i+1)+"Ave Wetbulb")
 
+day_anal_headings.append("Start Time Elec")
+day_anal_headings.append("Stop Time Elec")
+day_anal_headings.append("Baseline Elec")
+day_anal_headings.append("Start Time Steam")
+day_anal_headings.append("Stop Time Steam")
+day_anal_headings.append("Baseline Steam")
+
+similar_days_by_day_zipped = zip(*similar_days_by_day)
+
+ave_wbt_of_similar_days=[]
+for i in range(num_matches):
+    ave_wbt_of_similar_days.append([])
+
+for i in range(len(similar_days_by_day_zipped)):
+    for j in range(len(similar_days_by_day_zipped[i])):
+        ave_wbt_of_similar_days[i].append(wbt_daily_ave[similar_days_by_day_zipped[i][j]])
+
+output_list_by_day=[ts_year_of_days,wbt_daily_ave]
+
+for i in range(num_matches):
+    output_list_by_day.append(similar_days_by_DATE_zipped[i])
+    output_list_by_day.append(ave_wbt_of_similar_days[i])
+
+output_list_by_day.append(start_time_each_day_elec)
+output_list_by_day.append(end_time_each_day_elec)
+output_list_by_day.append(baseline_by_day_elec)
+output_list_by_day.append(start_time_each_day_steam)
+output_list_by_day.append(end_time_each_day_steam)
+output_list_by_day.append(baseline_by_day_steam)
+    
 ws2=wb.create_sheet(-1,"Day Analysis")
 
 for i in range(len(day_anal_headings)):
@@ -418,7 +421,7 @@ for i in range(len(day_anal_headings)):
         c2=ws2.cell(row=j+1,column=i)
         c2.value=output_list_by_day[i][j]
     
-    
+#----------------------------------------------------------------------------------------------
 wb.save(output_book)
 
 ##--------------------------------------------------------
@@ -431,54 +434,99 @@ print "Starting plot module, exit graph and go to interpreter to plot another da
 
 exit_flag="N"
 #exit_flag=0
-day_of_year=0
+#day_of_year=0
+date_of_year="12/25/2013"
 while exit_flag!="Y":
     
-    try:
-##        day_of_year_time=interval_time_by_day[day_of_year]
-##        day_of_year_usage=interval_usage_by_day[day_of_year]
-##        day_of_year_stdup=year_of_std_upper[day_of_year]
-##        day_of_year_stdlo=year_of_std_lower[day_of_year]
-##        day_of_year_baseline=baseline_by_day[day_of_year]
+    steam_or_elec=raw_input("elec[0] or steam[1]")
 
-        steam_plot_band=pl.plot_date(interval_time_by_day[day_of_year],interval_usage_by_day[day_of_year],'g-')
-        steam_plot_band=pl.plot_date(interval_time_by_day[day_of_year],year_of_std_upper[day_of_year],'b-')
-        steam_plot_band=pl.plot_date(interval_time_by_day[day_of_year],year_of_std_lower[day_of_year],'r-')
-        steam_plot_band=pl.plot_date(interval_time_by_day[day_of_year],baseline_by_day[day_of_year],'y')
-        
-        xaxisdate=interval_time_by_day[day_of_year][0]
-        
-        xaxislabel=(
-                       "Year:"         + str(xaxisdate.year)
-                    + " Month:"        + str(xaxisdate.month)
-                    + " Day of month:" + str(xaxisdate.day)
-                    + " Day of week:"  + str(xaxisdate.isoweekday())
-                    + " Day of year:"  + str(day_of_year)
-                       )
-        try:
-            xaxislabel+=" Start Time:" + str(start_time_each_day[day_of_year].hour)+":"+str(start_time_each_day[day_of_year].minute)
-        except:
-            xaxislabel+=" Start Time: Not Found"
+    if steam_or_elec=='0':
 
         try:
-            xaxislabel+=" End Time:"   + str(end_time_each_day[day_of_year].hour)+":"+str(end_time_each_day[day_of_year].minute)
+
+            plot_band=pl.plot_date(interval_time_by_day_elec[index],interval_usage_by_day_elec[index],'g-')
+            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_upper_elec[index],'b-')
+            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_lower_elec[index],'r-')
+            plot_band=pl.plot_date(interval_time_by_day_elec[index],baseline_by_day_elec[index],'y')
+            
+            xaxisdate=interval_time_by_day_elec[index][0]
+            
+            xaxislabel=(
+                           "Year:"         + str(xaxisdate.year)
+                        + " Month:"        + str(xaxisdate.month)
+                        + " Day of month:" + str(xaxisdate.day)
+                        + " Day of week:"  + str(xaxisdate.isoweekday())
+                           )
+            try:
+                xaxislabel+=" Start Time:" + str(start_time_each_day_elec[index].hour)+":"+str(start_time_each_day_elec[index].minute)
+            except:
+                xaxislabel+=" Start Time: Not Found"
+
+            try:
+                xaxislabel+=" End Time:"   + str(end_time_each_day_elec[index].hour)+":"+str(end_time_each_day_elec[index].minute)
+            except:
+                xaxislabel+=" End Time: Not Found occured next day"
+            
+            
+            plot_band=pl.xlabel(xaxislabel)
+            pl.show()
+            print "Got to end of plot try block"
+
         except:
-            xaxislabel+=" End Time: Not Found occured next day"
-        
-        
-        steam_plot_band=pl.xlabel(xaxislabel)
-        pl.show()
-        print "Got to end of plot try block"
+            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
 
-    except:
-        print "Are you sure you entered either 'Y' or an int from 1 to 366, inclusive?"
+        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
+        #exit_flag=exit_flag+1
+        try:
+            index=int(exit_flag)-1
+        except:
+            index=exit_flag
 
-    exit_flag=raw_input(["Y to exit or num from 1 to 366 to plot a day"])
-    #exit_flag=exit_flag+1
-    try:
-        day_of_year=int(exit_flag)-1
-    except:
-        day_of_year=exit_flag
+    elif steam_or_elec=='1':
+
+        try:
+
+            plot_band=pl.plot_date(interval_time_by_day_steam[index],interval_usage_by_day_steam[index],'g-')
+            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_upper_steam[index],'b-')
+            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_lower_steam[index],'r-')
+            plot_band=pl.plot_date(interval_time_by_day_steam[index],baseline_by_day_steam[index],'y')
+            
+            xaxisdate=interval_time_by_day_steam[index][0]
+            
+            xaxislabel=(
+                           "Year:"         + str(xaxisdate.year)
+                        + " Month:"        + str(xaxisdate.month)
+                        + " Day of month:" + str(xaxisdate.day)
+                        + " Day of week:"  + str(xaxisdate.isoweekday())
+                           )
+            try:
+                xaxislabel+=" Start Time:" + str(start_time_each_day_steam[index].hour)+":"+str(start_time_each_day_steam[index].minute)
+            except:
+                xaxislabel+=" Start Time: Not Found"
+
+            try:
+                xaxislabel+=" End Time:"   + str(end_time_each_day_steam[index].hour)+":"+str(end_time_each_day_steam[index].minute)
+            except:
+                xaxislabel+=" End Time: Not Found occured next day"
+            
+            
+            plot_band=pl.xlabel(xaxislabel)
+            pl.show()
+            print "Got to end of plot try block"
+
+        except:
+            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
+
+        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
+        #exit_flag=exit_flag+1
+        try:
+            index=int(exit_flag)-1
+        except:
+            index=exit_flag
+
+    else:
+        print "Try again"
+
 
 print "Exiting Program"
 

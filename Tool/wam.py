@@ -3,6 +3,7 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 import numpy as np
 import datetime
+from dateutil import parser
 
 
 def dtobj2xl(date_obj_def):
@@ -157,7 +158,7 @@ def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,cri
         for j in range(len(list_of_nums_def)):
 
             ## If the current config is good
-            if (criteria_date_def[i].isoweekday()==criteria_date_def[j].isoweekday()) and (i!=j): #and (j not in exclude_days_def)
+            if (criteria_date_def[i].isoweekday()==criteria_date_def[j].isoweekday()) and (i!=j) and (criteria_date_def[j] not in exclude_days_def):
 
                 ## append the list index of the wetbulb that is a potential candidate
                 day_of_year_def.append(j)
@@ -356,6 +357,19 @@ def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_de
 
 def getholidays():#to_, from_):
     hollydays_def=[
+                datetime.datetime(2010,12,31),      ## New Day
+                datetime.datetime(2011,1,1),        ## New Day
+                datetime.datetime(2011,1,17),       ## MLK Day
+                datetime.datetime(2011,2,21),       ## Pres Day
+                datetime.datetime(2011,5,30),       ## Mem Day
+                datetime.datetime(2011,7,4),        ## Indy Day
+                datetime.datetime(2011,9,5),        ## Lab Day
+                datetime.datetime(2011,10,10),       ## Col Day
+                datetime.datetime(2011,11,11),      ## Vets Day
+                datetime.datetime(2011,11,24),      ## Thanks Day
+                datetime.datetime(2011,11,25),      ## Coma Day
+                datetime.datetime(2011,12,26),      ## Christ Day
+        
                 datetime.datetime(2012,1,2),        ## New Day
                 datetime.datetime(2012,1,16),       ## MLK Day
                 datetime.datetime(2012,2,20),       ## Pres Day
@@ -516,131 +530,198 @@ def get_end_time_each_day(interval_time_by_day_def, interval_usage_by_day_def, b
     return end_time_each_day_def
 
 
+def get_date_range_from_user(debug_mode):
 
-######percent_above_baseline=0.03
-######count=0
-######thresh=8
-#######start_time=[]
-######start_time_each_day=[]
-######
-######## for every day
-######for i in range(len(interval_usage_by_day)):
-######
-######    found_start_time="No"
-######    start_time=[]
-######    count=0
-######
-######    ## for every 15 minute period
-######    for j in range(len(interval_usage_by_day[i])):
-######        
-######
-######        ##if the usage during the 15 minutes is greater than a percentage more than the baseline
-######        if interval_usage_by_day[i][j]>baseline_by_day[i][j]*(1+percent_above_baseline):
-######            ## increase count
-######            count=count+1
-######        else:
-######            ## otherwise reset count
-######            count=0
-######
-######        ## at this point, count could be from 0 to 96 (every value higher than baseline)
-######
-######        ## if at any point it becomes greater than thresh and it hasn't before today
-######        if count>=thresh and found_start_time=="No":
-######            ## say that the start time occured when the increase started
-######            start_time=interval_time_by_day[i][j-thresh]
-######
-######            ## and say that a start time was found for the day
-######            found_start_time="Yes"
-######
-######    if found_start_time=="Yes":
-######        if start_time.hour==0:
-######            start_time_each_day.append("err")
-######        else:
-######            start_time_each_day.append(start_time)
-######    else:
-######        start_time_each_day.append("N/A")
+    if debug_mode==False:
+        from dateutil import parser
+
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                start_date=raw_input("Start Date - All common formats are fine, use full year: ")
+                sd_obj=parser.parse(start_date)
+                got_to_end=True
+            except:
+                print "Date format not recognized or date does not exist"
+
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                end_date=raw_input("End Date - All common formats are fine, use full year: ")
+                ed_obj=parser.parse(end_date)
+                if sd_obj<ed_obj:
+                    got_to_end=True
+                else:
+                    print "What! enter the dates in order, fool!"
+            except:
+                print "Date format not recognized or date does not exist"
+
+        return [sd_obj, ed_obj]
+
+    else:
+        return [datetime.datetime(2013,4,1), datetime.datetime(2013,7,1)]
+
+def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):
+    
+    start_index_def=date_list_def.index(date_range_def[0])
+    end_index_def=date_list_def.index(date_range_def[1])
+
+    #interval_by_day_in_range_def=interval_by_day_def[start_index_def:end_index_def]
 
 
+    date_list_wkday_def=[]
+    date_list_wkend_def=[]
+    interval_wkday_def=[]
+    interval_wkend_def=[]
+
+    max_value_reached_def=0
+
+    #print start_index_def
+    #print end_index_def
+    
+    for i in range(start_index_def, end_index_def):
+        
+        if date_list_def[i].weekday()<=4:
+            date_list_wkday_def.append(date_list_def[i])
+            interval_wkday_def.append(interval_usage_by_day_def[i])
+        else:
+            date_list_wkend_def.append(date_list_def[i])
+            interval_wkend_def.append(interval_usage_by_day_def[i])
 
 
-################################
+        max_val_by_day_def=max(interval_usage_by_day_def[i])
+        if max_val_by_day_def>max_value_reached_def:
+            max_value_reached_def=max_val_by_day_def
+            peak_day_usage_def=interval_usage_by_day_def[i]
+            peak_date_def=date_list_def[i]
+        else:
+            pass
+        
 
 
-#####percent_above_baseline=0.03
-####count=0
-####thresh_end=1
-#####end_time=[]
-####end_time_each_day=[]
-####start_time_each_day_copy=list(start_time_each_day)
-####
-###### for every day
-####for i in range(len(interval_usage_by_day)):
-####
-####    ## Refresh some vars
-####    found_end_time="No"
-####    end_time=[]
-####    count=0
-####
-####    ## for every 15 minute period
-####    for j in range(len(interval_usage_by_day[i])):
-####
-####
-####        try:
-####            test=start_time_each_day_copy[i].hour
-####        except:
-####            start_time_each_day_copy[i]=interval_time_by_day[i][40]
-####
-####        ## If the 15 minute period in question is not even passed the start time
-####        if interval_time_by_day[i][j]<=start_time_each_day_copy[i]:
-####
-####            ## Then don't do anything. 
-####            pass
-####
-####        ## Otherwise, begin/continue the analysis. 
-####        else:
-####        
-####            ##if the usage during the 15 minutes is less than a percentage more than the baseline
-####            if interval_usage_by_day[i][j]<baseline_by_day[i][j]*(1+percent_above_baseline):
-####                ## increase count
-####                count=count+1
-####            else:
-####                ## otherwise reset count
-####                count=0
-####
-####            ## at this point, count could be from 0 to 96 minus the number of points that fell before the start time
-####
-####            ## if at any point it becomes greater than or equal to thresh and it hasn't before today
-####            if count>=thresh_end and found_end_time=="No":
-####                
-####                ## say that the end time occured when thresh was met
-####                end_time=interval_time_by_day[i][j-thresh_end]
-####
-####                ## and say that an end time was found for the day
-####                found_end_time="Yes"
-####
-####    if found_end_time=="Yes":
-######            if end_time.hour==0:
-######                end_time_each_day.append("err")
-######            else:
-####        end_time_each_day.append(end_time)
-####    else:
-####        ## the case that the program gets here on the last element of the array being indexed by i
-####        ## needs to be coded for. 
-####        ## If it fails it most likely means that the end time occurs the next day - at least for the data set that I'm using.
-####
-####        try:
-####
-####            for m in range(len(interval_usage_by_day[i+1])): #next day
-####                if found_end_time=="No":
-####                    if interval_usage_by_day[i+1][m]<baseline_by_day[i+1][m]*(1+percent_above_baseline):
-####                        found_end_time="Yes"
-####                        end_time=interval_time_by_day[i+1][m]
-####
-####        ## Last Day no Shutdown
-####        except:
-####            end_time="LDNSD"
-####            
-####        end_time_each_day.append(end_time)
+    interval_wkday_zipped_def=zip(*interval_wkday_def)
+    interval_wkend_zipped_def=zip(*interval_wkend_def)
+
+
+    wkday_ave_def=[]
+    for item in interval_wkday_zipped_def:
+        item_np_def=np.array(item)
+        item_ave_def=item_np_def.mean()
+        wkday_ave_def.append(item_ave_def)
+
+    wkend_ave_def=[]
+    for item in interval_wkend_zipped_def:
+        item_np_def=np.array(item)
+        item_ave_def=item_np_def.mean()
+        wkend_ave_def.append(item_ave_def)
+
+    return [wkday_ave_def,wkend_ave_def,peak_day_usage_def,peak_date_def]
+
+
+def get_bucket_date_range_from_user():
+    #bucket_end_date_text="6/30/2013"
+
+    bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
+    
+    bucket_end_date=parser.parse(bucket_end_date_text)
+
+    while bucket_end_date.isoweekday()!=1:
+        bucket_end_date=bucket_end_date-datetime.timedelta(days=1)
+
+    bucket_start_date=bucket_end_date-datetime.timedelta(days=364)
+
+    return [bucket_start_date, bucket_end_date]
+
+
+def get_operating_hours_from_user():
+
+    #bucket_specifying_open_or_closed="open"
+    
+    bucket_specifying_open_or_closed=raw_input("specifying open range or closed range? >>> ")
+
+    bucket_start_day_text="0:00"
+    #bucket_start_time_text="6:00"
+    #bucket_end_time_text="18:00"
+    bucket_end_day_text="23:45"
+
+    bucket_start_time_text=raw_input("start time hh:mm >>> ")
+    bucket_end_time_text=raw_input("end time hh:mm >>> ")
+
+    bucket_start_day=parser.parse(bucket_start_day_text)
+    bucket_start_time=parser.parse(bucket_start_time_text)
+    bucket_end_time=parser.parse(bucket_end_time_text)
+    bucket_end_day=parser.parse(bucket_end_day_text)
+
+    
+    bucket_current_time=bucket_start_day
+    bucket_open_closed=[]
+
+    while bucket_current_time<=bucket_end_day:
+        
+        if bucket_current_time<bucket_start_time or bucket_current_time>=bucket_end_time:
+            if bucket_specifying_open_or_closed=="open":
+                bucket_open_closed.append(0)
+            else:
+                bucket_open_closed.append(1)
+        else:
+            if bucket_specifying_open_or_closed=="open":
+                bucket_open_closed.append(1)
+            else:
+                bucket_open_closed.append(0)
+                
+        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
+
+    return bucket_open_closed
+    
+
+
+
+def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_date_index_def, end_date_index_def,
+                       interval_usage_by_day_def):
+
+    bucket_open_usage_def=[]
+    bucket_closed_usage_def=[]
+    bucket_date_def=[]
+    
+    intermediate_week_open=0
+    intermediate_week_closed=0
+
+    for i in range(start_date_index_def, end_date_index_def):
+        
+        if date_list_def[i].isoweekday()<6:
+
+            for j in range(len(bucket_operating_hours_by_day_def[i-start_date_index_def])):
+                if bucket_operating_hours_by_day_def[i-start_date_index_def][j]==1:
+                    intermediate_week_open+=interval_usage_by_day_def[i][j]
+                else:
+                    intermediate_week_closed+=interval_usage_by_day_def[i][j]
+
+        if date_list_def[i].isoweekday()==7:
+
+            bucket_date_def.append(date_list_def[i])
+            
+            bucket_open_usage_def.append(intermediate_week_open)
+            bucket_closed_usage_def.append(intermediate_week_closed)
+            
+            intermediate_week_open=0
+            intermediate_week_closed=0
+
+    return [bucket_open_usage_def, bucket_closed_usage_def, bucket_date_def]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

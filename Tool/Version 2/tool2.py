@@ -1,6 +1,10 @@
 ## Interval Data Analysis Tool - Written by James McGlynn on his own time, on his own computer, while working
 ## for CodeGreen Solutions. Circa 2013 (Jun - November)
 
+#dont make date list depend on minute value of time stamp, always reset it to zero
+
+
+
 ## This analysis should really use a minimum of two years of data.
 
 ## Future Considerations are:
@@ -30,11 +34,18 @@ from openpyxl import load_workbook
 ## Returns 2012 and 2013 Federal Holidays as a list of datetime objects.
 holidays = wam.getholidays()
 
-## How many similar days do you want to return? Three per year of data might be ok. 
-num_matches=5
-
-## Ask user to navigate to file 
+## Ask user to navigate to file
+print "Select file using askopenfile dialog."
 book_name=chan.getPath(os.getcwd())
+
+## Ask user for date range to analyze
+print "What date range would you like to use for the single day stats?"
+single_day_stats_date_range=wam.get_date_range_from_user(False)
+
+## How many similar days do you want to return? Three per year of data might be ok.
+print "Please select the number of similar days you want to find for each day: ",
+num_matches_raw=raw_input("> ")
+num_matches=5
 
 ## (Time keeping stuff - not important)
 ##------------------------------------------------
@@ -329,12 +340,13 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 print "The total runtime to this point was: "+str(round(time_list[-1]-time_list[0],1))+" seconds"
 ##--------------------------------------------------------
 
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
 
-
-print "Getting the single day statistics!"
-print "But since these stats depend on time period, I have to get a date range from you first"
-
-single_day_stats_date_range=wam.get_date_range_from_user(False)
+print "Getting the single day statistics using the date range you gave earlier!",
+#single_day_stats_date_range=wam.get_date_range_from_user(False)
 
 single_day_stats_elec=wam.get_stats_by_day_in_range(interval_usage_by_day_elec, date_list, single_day_stats_date_range)
 wk_day_average_for_date_range_elec=single_day_stats_elec[0]
@@ -353,14 +365,6 @@ time_range_for_plotting_average_day=[]
 for i in range(96):
     time_range_for_plotting_average_day.append(start_time_for_plotting_average_day+datetime.timedelta(minutes=15*i))
     
-
-
-
-
-
-
-
-
 
 
 
@@ -395,17 +399,22 @@ for i in range(len(similar_days_by_day_zipped)):
 
 
 
-
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
 
 
 
 ##-----------------------------Printing Shit to Excel------------------------------
 
-print "Printing results to excel: ",
-output_book=chan.add_to_filename(book_name," - Results - "+str(int(time.time())))
+print "Printing initial results to excel.",
+output_book=chan.add_to_filename(book_name," - Results - "+str(int(time_list[0])))
 wb = Workbook()
 
-
+##-------------------------------------------------------------------------------
+## time_list.append(time.time())
+##-------------------------------------------------------------------------------
 
 ## Printing the interval analysis results---------------------------------------------------------
 
@@ -415,25 +424,27 @@ column_headings=["Time Stamp",
                  "Electric Usage(kWh)",
                  "Average Elec Usage(kWh)",
                  "STDEV Elec(kWh)",
-                 "Ave+STD Elec (kWh)",
-                 "Ave-STD Elec (kWh)",
+                 #"Ave+STD Elec (kWh)",
+                 #"Ave-STD Elec (kWh)",
                  "Steam Usage (lbs)",
                  "Average Steam Usage (lbs)",
                  "STDEV Steam (lbs)",
-                 "Ave+STD Steam (lbs)",
-                 "Ave-STD Steam (lbs)"]
+                 #"Ave+STD Steam (lbs)",
+                 #"Ave-STD Steam (lbs)"
+                 ]
 
 output_list=[interval_time,
              interval_usage_elec,
              interval_averages_elec,
              interval_std_elec,
-             interval_upper_bound_elec,
-             interval_lower_bound_elec,
+             #interval_upper_bound_elec,
+             #interval_lower_bound_elec,
              interval_usage_steam,
              interval_averages_steam,
              interval_std_steam,
-             interval_upper_bound_steam,
-             interval_lower_bound_steam]
+             #interval_upper_bound_steam,
+             #interval_lower_bound_steam
+             ]
 
 ## for all headings i
 for i in range(len(column_headings)):
@@ -585,6 +596,7 @@ time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
 
+print "Use single day stat results to estimate start and stop times: "
 
 bucket_date_range=wam.get_bucket_date_range_from_user()
 
@@ -592,8 +604,15 @@ start_date_index=date_list.index(bucket_date_range[0])
 
 end_date_index=date_list.index(bucket_date_range[1])
 
-
 bucket_open_closed_elec=wam.get_operating_hours_from_user()
+
+
+##--------------------------------------------------------
+time_list.append(time.time())
+#print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
+
+print "Bucketing usage and printing results to new book.",
 
 bucket_operating_hours_by_day_elec=[]
 for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
@@ -613,7 +632,7 @@ bucketed_usage_steam=wam.get_bucketed_usage(bucket_operating_hours_by_day_steam,
                        interval_usage_by_day_steam)
 
 #printing usage to new excel sheet
-output_book_buckets=chan.add_to_filename(book_name," - Bucketed Usage - "+str(int(time.time())))
+output_book_buckets=chan.add_to_filename(book_name," - Bucketed Usage - "+str(int(time_list[0])))
 
 wb_buckets = Workbook()
 
@@ -634,6 +653,15 @@ for i in range(len(bucket_headings)):
 
 wb_buckets.save(output_book_buckets)
 
+##--------------------------------------------------------
+time_list.append(time.time())
+print str(round(time_list[-1]-time_list[-2],1))+" seconds"
+##--------------------------------------------------------
+
+
+raw_input("Press any key to exit, I prefer enter, don't forget to update the buckets")
+
+print "Exited Program"
 
 
 ##bucket_closed_usage=[]
@@ -769,6 +797,3 @@ wb_buckets.save(output_book_buckets)
 ##############        print "Try again"
 ##############
 
-raw_input("Press any key to exit, I prefer enter")
-
-print "Exited Program"

@@ -1,135 +1,128 @@
-
+import datetime
+import os, time #wam
+import numpy as np
+from marbles import glass as chan
 from openpyxl import Workbook
 from openpyxl import load_workbook
-import numpy as np
-import datetime
+import wam3 as wam
+import wamo3 as wamo
 from dateutil import parser
+#import pylab as pl
+
+def interval2day(interval_data_def):
 
 
-def dtobj2xl(date_obj_def):
-    base_day_def=datetime.datetime(1899,12,30)
-    elapsed_def=date_obj_def-base_day_def
-    xltime_def=elapsed_def.total_seconds()/(24*3600)
-    return xltime_def
+    number_of_non_date_columns_def=len(interval_data_def[1:])
     
+    number_of_columns_def=len(interval_data_def)
 
-def xl2dtobj(xl_date_def,datemode_def):
-    return (datetime.datetime(1899,12,30)+ datetime.timedelta(days=xl_date_def + 1462 * datemode_def))
+    ## The datetime is assumed to be the first list 
+    datetime_list_def=interval_data_def[0]
 
+    ## Create space for the lists of data (exclude the date)
+    data_lists_def=[]
 
-def xlsx2np(book_path_def, sheet_name_def, num_col_def):
-
-    wb=load_workbook(book_path_def)
-
-    ## Load the active sheet (only one sheet)
-    ws = wb.get_sheet_by_name(sheet_name_def)
-
-    ## Get the last occupied row of data - the code assumed the number of columns and what is in them
-    last_occ_row_def=ws.rows[-1][0].row
-
-    ## Initialize some stuff
-    #time_stamp_list_def=[]
-    #wbt_list_def=[]
-
-    return_list_def=[]
-    for k in range(num_col_def):
-        return_list_def.append([])
-
-    ## Get every item in the spreadsheet (thousands at this point
-    ## and put the datestamp and wetbulb temp into a numpy array. 
-    for i in range(last_occ_row_def):
-        for j in range(len(return_list_def)):
-            
-            c_def=ws.cell(row=i, column=j)
-            return_list_def[j].append(c_def.value)         
-
-    #time_stamp_np=np.array(time_stamp_list[1:])
-    #wbt_np=np.array(wbt_list[1:])
-
-    ## this removes the heading name - I should really make this a keyed list and use the
-    ## column heading as the key!
-    for i in range(len(return_list_def)):
-        return_list_def[i]=return_list_def[i][1:]
-    
-    #ts_wbt=[time_stamp_np,wbt_np]
-
-    return return_list_def
+    ## Now I have a list of at least one other list, but possibly more
+    for i in range(1,number_of_columns_def):
+        
+        data_lists_def.append(interval_data_def[i])
 
 
-def interval2day(time_list_def, data_list_def):
-    ## Set first date to its own variable
-    
-    #start_date_def=time_list_def[0]
-    #end_date_def=time_list_def[-1]
-    
-    #elap_td_def=end_date_def-start_date_def
-    #elap_int_def=elap_td_def.days+1
+    ## Get the first date (assumed to be the earliest date)
+    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
 
-    ## Initialize a place to hold the wbt by day. 
-    #wbt_by_day_def=[]
-    #for i in range(elap_int_def):
-    #    wbt_by_day_def.append([])
+    ## Get the last date (assumed to be the most recent date)
+    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
 
-    #ts_by_day_def=[]
-    #for i in range(elap_int_def):
-    #    ts_by_day_def.append([])
-
-
-    current_date_def=time_list_def[0]
-    end_date_def=time_list_def[-1]
+    ## Prepare for creation of date list
     date_list_def=[]
+    
+    ## This is done this way at the moment in case there are missing dates, at least every day will still have
+    ## a space allocated for it. 
     while current_date_def<=end_date_def:
         date_list_def.append(current_date_def)
         current_date_def=current_date_def+datetime.timedelta(days=1)
 
-    ts_by_day_def=[]
-    for i in range(len(date_list_def)):
-        ts_by_day_def.append([])
-    
-    wbt_by_day_def=[]
-    for i in range(len(date_list_def)):
-        wbt_by_day_def.append([])
+    ## Make a number of unique lists
+    unique_lists=[]
+    for i in range(number_of_columns_def):
+        unique_lists.append([])
+        for j in range(len(date_list_def)):
+            unique_lists[i].append([])
 
+    datetime_list_by_day_def=unique_lists[0]
+                                   
+    data_lists_by_day_def=[]
+    ## For as many columns of data there are
+    for i in range(1,number_of_columns_def):
+        ## Make room for that column of data to be sorted by day
+        data_lists_by_day_def.append(unique_lists[i])
 
-    ## Go through the huge list and put everything where it goes.
-
-    for i in range(len(time_list_def)): ## FOR EVERY SINGLE DATA POINT (8000 FOT TEMP, 30000 FOR INTERVAL)
-
-        for j in range(len(date_list_def)): ## FOR EVERY DAY THAT FALLS IN THE RANGE BETWEEN THE OLDEST AND NEWEST DATE IN THE DATE RANGE
-
-            ## STRIP OFF THE TIME COMPONENT FROM THE INTERVAL DATETIME, IF THE DATE MATCHES THE CURRENT DAY THEN ADD, IF NOT MOVE ON!
-            interval_data_day_def=datetime.datetime(time_list_def[i].year,time_list_def[i].month,time_list_def[i].day)
-
-            if interval_data_day_def==date_list_def[j]:
-                   ts_by_day_def[j].append(time_list_def[i])
-                   wbt_by_day_def[j].append(data_list_def[i])
-
-                   
         
-        #for j in range(elap_int_def):
+    ## Go through the huge list and put everything where it goes.
+    ## FOR EVERY SINGLE DATA POINT in the original datetime list
+    for i in range(len(datetime_list_def)):
 
-        #    ## this if statement needs to stop doing this right now! to be fully robust it should do a year-month-day comparison
-        #    if time_list_def[i].timetuple().tm_yday-1==j: ######WWWWWRRRRRROOOOONNNNNGGGGGGGGGGGGGGG
-        #        wbt_by_day_def[j].append(data_list_def[i])
-        #        ts_by_day_def[j].append(time_list_def[i])
+        ## Strip the time off of the datetime in the interval datetime list
+        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
 
-    return_list_def=[ts_by_day_def,wbt_by_day_def]
+        ## Then find the index for that day in the date list
+        index_def=date_list_def.index(interval_data_day_def)
+        #print index_def
+
+        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+
+        for k in range(len(interval_data_def[1:])):
+            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+                                       
+    return_list_def=[]
+
+    for i in range(len(interval_data_def[1:])):
+        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
 
     return return_list_def
 
-                   
+def getholidays():#to_, from_):
+    hollydays_def=[
+                datetime.datetime(2010,12,31),      ## New Day
+                datetime.datetime(2011,1,1),        ## New Day
+                datetime.datetime(2011,1,17),       ## MLK Day
+                datetime.datetime(2011,2,21),       ## Pres Day
+                datetime.datetime(2011,5,30),       ## Mem Day
+                datetime.datetime(2011,7,4),        ## Indy Day
+                datetime.datetime(2011,9,5),        ## Lab Day
+                datetime.datetime(2011,10,10),       ## Col Day
+                datetime.datetime(2011,11,11),      ## Vets Day
+                datetime.datetime(2011,11,24),      ## Thanks Day
+                datetime.datetime(2011,11,25),      ## Coma Day
+                datetime.datetime(2011,12,26),      ## Christ Day
+        
+                datetime.datetime(2012,1,2),        ## New Day
+                datetime.datetime(2012,1,16),       ## MLK Day
+                datetime.datetime(2012,2,20),       ## Pres Day
+                datetime.datetime(2012,5,28),       ## Mem Day
+                datetime.datetime(2012,7,4),        ## Indy Day
+                datetime.datetime(2012,9,3),        ## Lab Day
+                datetime.datetime(2012,10,8),       ## Col Day
+                datetime.datetime(2012,11,12),      ## Vets Day
+                datetime.datetime(2012,11,22),      ## Thanks Day
+                datetime.datetime(2012,11,23),      ## Coma Day
+                datetime.datetime(2012,12,25),      ## Christ Day
 
-def list_of_lists_2_list_of_ave(list_of_lists_def):
-
-    list_of_aves_def=[]
-    for i in range(len(list_of_lists_def)):
-        try:
-            daily_ave_def=float(sum(list_of_lists_def[i]))/len(list_of_lists_def[i])
-        except:
-            daily_ave_def="err"
-        list_of_aves_def.append(daily_ave_def)
-    return list_of_aves_def
-
+                datetime.datetime(2013,1,1),        ## New Day
+                datetime.datetime(2013,1,21),       ## MLK Day
+                datetime.datetime(2013,2,18),       ## Pres Day
+                datetime.datetime(2013,5,27),       ## Mem Day
+                datetime.datetime(2013,7,4),        ## Indy Day
+                datetime.datetime(2013,9,2),        ## Lab Day
+                datetime.datetime(2013,10,14),      ## Col Day
+                datetime.datetime(2013,11,11),      ## Vets Day
+                datetime.datetime(2013,11,28),      ## Thanks Day
+                datetime.datetime(2013,11,29),      ## Coma Day
+                datetime.datetime(2013,12,25)       ## Christ Day
+                ]
+    
+    return hollydays_def
 
 #This function is working just fine, 6 closest matches is too many for one year of data, it looks like 2 or three would be better.
 # I'm going to use 4 for now. I still want to find out why the averages don't exactly match and I still need to fix the date issue.
@@ -203,7 +196,6 @@ def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,cri
         indices_of_matches_def.append(min_indices_def)
 
     return indices_of_matches_def
-
 
 ## This function takes a list of lists and another list of lists and groups the first list based
 ## on the indices in the second one?
@@ -281,39 +273,6 @@ def get_ave_std_of_list_of_list_of_list(list_to_analyze_def):
 
     return return_list_def
 
-def ceil_to_one_sig_fig(number_to_ceil_def):
-
-    magnitude_def=10**(int(len(str(int(number_to_ceil_def))))-1)
-    if number_to_ceil_def%magnitude_def==0:
-        
-        return number_to_ceil_def
-    
-    elif number_to_ceil_def<0:
-        opp_def=number_to_ceil_def*-1
-        temp_ceil_def=floor_to_one_sig_fig_def(opp_def)
-        ceil_def=temp_ceil_def*-1
-        return ceil_def
-
-    else:
-
-        actual_ceil_def=(int(str(int(number_to_ceil_def))[0:1])+1)*10**(int(len(str(int(number_to_ceil_def))))-1)
-
-        return actual_ceil_def
-
-def floor_to_one_sig_fig(number_to_floor_def):
-
-    if number_to_floor_def<0:
-        opp_def=number_to_floor_def*-1
-        temp_floor_def=ceil_to_one_sig_fig_def(opp_def)
-        floor_def=temp_floor_def*-1
-        return floor_def
-
-    else:
-
-        actual_floor_def=(int(str(int(number_to_floor_def))[0:1]))*10**(int(len(str(int(number_to_floor_def))))-1)
-
-        return actual_floor_def
-
 def get_ave_of_k_min_values(list_to_take_mins_from_all_def,num_of_min_values_def,index_start_def, index_end_def):
 
     ## This is done in case you want to look at a beginning of the day baseline and not have crazy
@@ -352,50 +311,6 @@ def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_de
             baseline_by_day_def[i].append(baseline_def)
 
     return baseline_by_day_def
-
-
-
-def getholidays():#to_, from_):
-    hollydays_def=[
-                datetime.datetime(2010,12,31),      ## New Day
-                datetime.datetime(2011,1,1),        ## New Day
-                datetime.datetime(2011,1,17),       ## MLK Day
-                datetime.datetime(2011,2,21),       ## Pres Day
-                datetime.datetime(2011,5,30),       ## Mem Day
-                datetime.datetime(2011,7,4),        ## Indy Day
-                datetime.datetime(2011,9,5),        ## Lab Day
-                datetime.datetime(2011,10,10),       ## Col Day
-                datetime.datetime(2011,11,11),      ## Vets Day
-                datetime.datetime(2011,11,24),      ## Thanks Day
-                datetime.datetime(2011,11,25),      ## Coma Day
-                datetime.datetime(2011,12,26),      ## Christ Day
-        
-                datetime.datetime(2012,1,2),        ## New Day
-                datetime.datetime(2012,1,16),       ## MLK Day
-                datetime.datetime(2012,2,20),       ## Pres Day
-                datetime.datetime(2012,5,28),       ## Mem Day
-                datetime.datetime(2012,7,4),        ## Indy Day
-                datetime.datetime(2012,9,3),        ## Lab Day
-                datetime.datetime(2012,10,8),       ## Col Day
-                datetime.datetime(2012,11,12),      ## Vets Day
-                datetime.datetime(2012,11,22),      ## Thanks Day
-                datetime.datetime(2012,11,23),      ## Coma Day
-                datetime.datetime(2012,12,25),      ## Christ Day
-
-                datetime.datetime(2013,1,1),        ## New Day
-                datetime.datetime(2013,1,21),       ## MLK Day
-                datetime.datetime(2013,2,18),       ## Pres Day
-                datetime.datetime(2013,5,27),       ## Mem Day
-                datetime.datetime(2013,7,4),        ## Indy Day
-                datetime.datetime(2013,9,2),        ## Lab Day
-                datetime.datetime(2013,10,14),      ## Col Day
-                datetime.datetime(2013,11,11),      ## Vets Day
-                datetime.datetime(2013,11,28),      ## Thanks Day
-                datetime.datetime(2013,11,29),      ## Coma Day
-                datetime.datetime(2013,12,25)       ## Christ Day
-                ]
-    
-    return hollydays_def
 
 def get_start_time_each_day(interval_time_by_day_def,interval_usage_by_day_def, baseline_by_day_def, percent_above_baseline_def, threshold_def):
 
@@ -561,6 +476,7 @@ def get_date_range_from_user(debug_mode):
     else:
         return [datetime.datetime(2013,4,1), datetime.datetime(2013,7,1)]
 
+
 def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):
     
     start_index_def=date_list_def.index(date_range_def[0])
@@ -707,21 +623,4 @@ def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_d
             intermediate_week_closed=0
 
     return [bucket_open_usage_def, bucket_closed_usage_def, bucket_date_def]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

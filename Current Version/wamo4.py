@@ -50,12 +50,13 @@ class MyWorkbook(object):
 
             self.work_book_data_no_headings[self.sheet_names[i]]=no_heading_intermediate
             
-
+    
     def get_num_sheets(self):
 
         return len(self.sheet_objects)
 
-
+## A sheet object has all the data form the sheet in it.
+## Sheet data range is a bunch of cell addresses, sheet data is the data at those addresses.
 class MySheet(object):
 
     def __init__(self, workbook, sheet_name):

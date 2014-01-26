@@ -670,7 +670,105 @@ print "Exited Program"
 
 
 
-
+################ ----------------------------Plotting Suff-------------------------------------
+##############print "Starting plot module, exit graph and go to interpreter to plot another day"
+##############
+##############exit_flag="N"
+###############exit_flag=0
+###############day_of_year=0
+##############date_of_year="12/25/2013"
+##############index=50
+##############while exit_flag!="Y":
+##############    
+##############    steam_or_elec=raw_input("elec[0] or steam[1]")
+##############
+##############    if steam_or_elec=='0':
+##############
+##############        try:
+##############
+##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],interval_usage_by_day_elec[index],'g-')
+##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_upper_elec[index],'b-')
+##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_lower_elec[index],'r-')
+##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],baseline_by_day_elec[index],'y')
+##############            
+##############            xaxisdate=interval_time_by_day_elec[index][0]
+##############            
+##############            xaxislabel=(
+##############                           "Year:"         + str(xaxisdate.year)
+##############                        + " Month:"        + str(xaxisdate.month)
+##############                        + " Day of month:" + str(xaxisdate.day)
+##############                        + " Day of week:"  + str(xaxisdate.isoweekday())
+##############                           )
+##############            try:
+##############                xaxislabel+=" Start Time:" + str(start_time_each_day_elec[index].hour)+":"+str(start_time_each_day_elec[index].minute)
+##############            except:
+##############                xaxislabel+=" Start Time: Not Found"
+##############
+##############            try:
+##############                xaxislabel+=" End Time:"   + str(end_time_each_day_elec[index].hour)+":"+str(end_time_each_day_elec[index].minute)
+##############            except:
+##############                xaxislabel+=" End Time: Not Found occured next day"
+##############            
+##############            
+##############            plot_band=pl.xlabel(xaxislabel)
+##############            pl.show()
+##############            print "Got to end of plot try block"
+##############
+##############        except:
+##############            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
+##############
+##############        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
+##############        #exit_flag=exit_flag+1
+##############        try:
+##############            index=int(exit_flag)-1
+##############        except:
+##############            index=exit_flag
+##############
+##############    elif steam_or_elec=='1':
+##############
+##############        try:
+##############
+##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],interval_usage_by_day_steam[index],'g-')
+##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_upper_steam[index],'b-')
+##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_lower_steam[index],'r-')
+##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],baseline_by_day_steam[index],'y')
+##############            
+##############            xaxisdate=interval_time_by_day_steam[index][0]
+##############            
+##############            xaxislabel=(
+##############                           "Year:"         + str(xaxisdate.year)
+##############                        + " Month:"        + str(xaxisdate.month)
+##############                        + " Day of month:" + str(xaxisdate.day)
+##############                        + " Day of week:"  + str(xaxisdate.isoweekday())
+##############                           )
+##############            try:
+##############                xaxislabel+=" Start Time:" + str(start_time_each_day_steam[index].hour)+":"+str(start_time_each_day_steam[index].minute)
+##############            except:
+##############                xaxislabel+=" Start Time: Not Found"
+##############
+##############            try:
+##############                xaxislabel+=" End Time:"   + str(end_time_each_day_steam[index].hour)+":"+str(end_time_each_day_steam[index].minute)
+##############            except:
+##############                xaxislabel+=" End Time: Not Found occured next day"
+##############            
+##############            
+##############            plot_band=pl.xlabel(xaxislabel)
+##############            pl.show()
+##############            print "Got to end of plot try block"
+##############
+##############        except:
+##############            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
+##############
+##############        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
+##############        #exit_flag=exit_flag+1
+##############        try:
+##############            index=int(exit_flag)-1
+##############        except:
+##############            index=exit_flag
+##############
+##############    else:
+##############        print "Try again"
+##############
 
 
 

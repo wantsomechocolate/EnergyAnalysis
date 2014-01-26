@@ -2,7 +2,7 @@ from distutils.core import setup
 
 import py2exe
 
-setup(console=['tool4.py'])
+setup(console=['tool41.py'])
 
 ## Download and install py2exe
 ## Navigate to the directory with the setup file and tool.py

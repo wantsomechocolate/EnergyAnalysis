@@ -7,6 +7,8 @@ from openpyxl import load_workbook
 import wam4 as wam
 import wamo4 as wamo
 from dateutil import parser
+import pandas as pd
+
 #import pylab as pl
 
 class MyWorkbook(object):
@@ -15,11 +17,13 @@ class MyWorkbook(object):
     def __init__(self, book_name):
 
         ## Load the workbook
-        self.wb = load_workbook(book_name)
+        #self.wb = load_workbook(book_name)
+        self.wb = pd.ExcelFile(book_name)
 
         ## Get all the sheet names - the order of this list will be the
         ## same order as the sheets in the book I believe (hope)
-        self.sheet_names=self.wb.get_sheet_names()
+        #self.sheet_names=self.wb.get_sheet_names()
+        self.sheet_names=self.wb.sheet_names
 
         self.sheet_objects=[]
 
@@ -61,17 +65,31 @@ class MySheet(object):
 
     def __init__(self, workbook, sheet_name):
 
-        self.sheet=workbook.get_sheet_by_name(sheet_name)
-
-        self.sheet_data_range=self.sheet.columns
+        self.sheet=workbook.parse(sheet_name)
+        self.sheet_data_by_row=self.sheet.values
+        self.sheet_data_by_col=zip(*self.sheet_data_by_row)
 
         self.sheet_data=[]
-        for i in range(len(self.sheet_data_range)):
-            self.sheet_data.append([])
 
-        for i in range(len(self.sheet_data_range)):
-            for j in range(len(self.sheet_data_range[i])):
-                self.sheet_data[i].append(self.sheet_data_range[i][j].value)
+        for i in range(len(list(self.sheet.columns))):
+            self.sheet_data.append(list(self.sheet_data_by_col[i]))
+            self.sheet_data[i].insert(0,[list(self.sheet.columns)[i]])
+            
+            
+
+######        self.sheet=workbook.get_sheet_by_name(sheet_name)
+######
+######        self.sheet_data_range=self.sheet.columns
+######
+######        self.sheet_data=[]
+######        for i in range(len(self.sheet_data_range)):
+######            self.sheet_data.append([])
+######
+######        for i in range(len(self.sheet_data_range)):
+######            for j in range(len(self.sheet_data_range[i])):
+######                self.sheet_data[i].append(self.sheet_data_range[i][j].value)
+
+        
 
 class IntervalData(object):
 

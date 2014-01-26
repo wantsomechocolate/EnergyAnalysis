@@ -119,7 +119,20 @@ def getholidays():#to_, from_):
                 datetime.datetime(2013,11,11),      ## Vets Day
                 datetime.datetime(2013,11,28),      ## Thanks Day
                 datetime.datetime(2013,11,29),      ## Coma Day
-                datetime.datetime(2013,12,25)       ## Christ Day
+                datetime.datetime(2013,12,25),      ## Christ Day
+
+                datetime.datetime(2014,1,1),        ## New Day
+                datetime.datetime(2014,1,20),       ## MLK Day
+                datetime.datetime(2014,2,17),       ## Pres Day
+                datetime.datetime(2014,5,26),       ## Mem Day
+                datetime.datetime(2014,7,4),        ## Indy Day
+                datetime.datetime(2014,9,1),        ## Lab Day
+                datetime.datetime(2014,10,13),      ## Col Day
+                datetime.datetime(2014,11,11),      ## Vets Day
+                datetime.datetime(2014,11,27),      ## Thanks Day
+                datetime.datetime(2014,11,28),      ## Coma Day
+                datetime.datetime(2014,12,25)       ## Christ Day
+                
                 ]
     
     return hollydays_def

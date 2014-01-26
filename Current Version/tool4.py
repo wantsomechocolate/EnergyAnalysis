@@ -33,7 +33,7 @@ time_list.append(time.time())
 ##-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
-print "Initializing workbook: ",
+print "Initializing workbook: "
 a_work_book=wamo.MyWorkbook(book_name)
 ##-----------------------------------------------------------------------
 
@@ -375,7 +375,7 @@ column_headings=["Time Stamp",
                  #"Ave-STD Steam (lbs)"]
                  ]
 
-output_list=[interval_time,
+output_list=[interval_data_no_headings[0],
              interval_usage_elec,
              interval_averages_elec,
              interval_std_elec,

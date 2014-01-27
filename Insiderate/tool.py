@@ -12,21 +12,36 @@ import pylab as pl
 ##-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
-print "Please find the askopenfile dialog and choose a file"
-book_name=chan.getPath(os.getcwd())
-print "You chose "+book_name
+print "-----------------------------------------------------------"
+print "-----------------------------------------------------------"
+print "----------Welcome to Insiderate (In-sid-er-ate)------------"
+print "-----------------------------------------------------------"
+print ""
+print "--Please navigate to the .xlsx file containing your data"
+print ""
+book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
+print "--You chose to analyze"+book_name
+print ""
 #-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
-print "Please enter the date range on which to perform single day stats"
-print "The end date you choose here will also represnet the end date"
-print "of the year used for bucket analysis"
+print "-----------------------------------------------------------"
+print "--You will now enter the date range for the quarter or month"
+print "--that this report is for"
+print "-----------------------------------------------------------"
+print ""
+print "-----------------------------------------------------------"
 single_day_stats_date_range=wam.get_date_range_from_user(False)
 ##-----------------------------------------------------------------------
 
 ## How many similar days do you want to return? Three per year of data might be ok.
-print "Please select the number of similar days you want to find for each day: ",
-num_matches=chan.getIntegerInput(3,10,"[5]> ",5,[])
+print "-----------------------------------------------------------"
+print "--Now you have to tell me how many days to be used when calculating"
+print "--the band by choosing days that had similar weather conditions"
+print ""
+print "--For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5"
+print ""
+num_matches=chan.getIntegerInput(3,10,"--The default is in brackets [5]> ",5,[])
 
 ##-----------------------------------------------------------------------
 time_list=[]
@@ -34,7 +49,8 @@ time_list.append(time.time())
 ##-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
-print "Initializing workbook: "
+print "-----------------------------------------------------------"
+print "Pulling interval and weather data in from the workbook: ",
 a_work_book=wamo.MyWorkbook(book_name)
 ##-----------------------------------------------------------------------
 
@@ -45,7 +61,7 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 
 
 #------------------------------------------------------------------------
-print "Creating electric and steam interval data objects: ",
+print "Preparing energy data for analysis: ",
 interval_data_no_headings=a_work_book.work_book_data_no_headings["Interval Usage"]
 interval_data_by_day=wam.interval2day(interval_data_no_headings)
 interval_data_object=wamo.IntervalData(interval_data_no_headings, interval_data_by_day[0])
@@ -65,7 +81,7 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 #------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
-print "Creating temperature data object: ",
+print "Creating temperature data for analysis: ",
 interval_weather_no_headings=a_work_book.work_book_data_no_headings["Interval Temp"]                              
 interval_weather_by_day=wam.interval2day(interval_weather_no_headings)             
 weather_object=wamo.IntervalData(interval_weather_no_headings,interval_weather_by_day[0])
@@ -88,6 +104,13 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 ##----------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
+## This should pull from a seperately maintained file.
+print "-----------------------------------------------------------"
+print "--Getting the holidays to exclude from the analysis"
+print "--The 2011-2014 holidays are currently hardcoded into the source"
+print "--It is every Federal Holiday, plus the day after T-Gives.
+print "-----------------------------------------------------------"
+print ""
 holidays = wam.getholidays()
 #num_matches=5
 #------------------------------------------------------------------------
@@ -101,7 +124,13 @@ holidays = wam.getholidays()
 
 
 ## ---------------------Find the N most similar days to each day--------------------
-print "Finding similar days based on a single criteria (Average WBT): ",
+print "-----------------------------------------------------------"
+print "Finding similar days based on daily average wetbulb temerature"
+print "We use wetbulb temperature because it more accurately reflects"
+print "Latent cooling requirements in the summer time. We use average"
+print "day because a better approach has not yet been implemented : ",
+print "-----------------------------------------------------------"
+print ""
 similar_days_by_day=wam.get_n_closest_matches_for_each_item_in_list(wbt_daily_ave, num_matches, date_list, holidays)
 
 
@@ -128,7 +157,13 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 ##------------------------------------------------------------------------------
 ##---------------------Apply weather findings to interval data---------------------
 
-print "Gathering interval usage for days that had similar weather: ",
+print "-----------------------------------------------------------"
+print "--Now that we have the similar days, we need to get the data"
+print "--from each of those similar days on an interval basis"
+print "--in order to be able to do the next step.
+print "--So let's do that: ",
+print "-----------------------------------------------------------"
+print ""
 
 ## Function name is pretty weak, you probably get what it's doing
 similar_days_interval_usage_elec=wam.use_list_of_list_of_indices_to_group_a_list_of_lists(interval_usage_by_day_elec,similar_days_by_day)
@@ -622,7 +657,7 @@ try:
     end_date_index=date_list.index(bucket_date_range[1])
 except:
     end_date_index=-1
-    print "Something went wrong getting the end date
+    print "Something went wrong getting the end date"
     print "Defaulting to the last date in list"
 
 

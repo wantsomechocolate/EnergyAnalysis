@@ -12,7 +12,6 @@ import pylab as pl
 ##-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
-#book_name='C:/Users/James McGlynn/Documents/GitHub/EnergyAnalysis/Tool/ZZ - Test.xlsx'
 print "Please find the askopenfile dialog and choose a file"
 book_name=chan.getPath(os.getcwd())
 print "You chose "+book_name
@@ -20,6 +19,8 @@ print "You chose "+book_name
 
 ##-----------------------------------------------------------------------
 print "Please enter the date range on which to perform single day stats"
+print "The end date you choose here will also represnet the end date"
+print "of the year used for bucket analysis"
 single_day_stats_date_range=wam.get_date_range_from_user(False)
 ##-----------------------------------------------------------------------
 
@@ -609,20 +610,20 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
 
 
-bucket_date_range=wam.get_bucket_date_range_from_user()
+bucket_date_range=wam.get_bucket_date_range_from_user(end_date=single_day_stats_date_range[1])
+#bucket_date_range=single_day_stats_date_range[1]
 
 try:
     start_date_index=date_list.index(bucket_date_range[0])
 except ValueError:
     start_date_index=0
 
-
-end_date_index=date_list.index(bucket_date_range[1])
-
-
-
-
-
+try:
+    end_date_index=date_list.index(bucket_date_range[1])
+except:
+    end_date_index=-1
+    print "Something went wrong getting the end date
+    print "Defaulting to the last date in list"
 
 
 
@@ -634,40 +635,19 @@ end_date_index=date_list.index(bucket_date_range[1])
 
 
 
+## Graph the average weekday so that the user can get the operating hours visually
+## I calculate the start and stop times for each day, but it isn't very robust
+## so this is currently the accepted method. 
 
-
-
-## What do I need,
-## an x axis (hours)
-## yaxis, average weekday, average weekend, peakday
-
+## I show the electric graph here
 print "Showing you the average day stats for ELECTRIC so you can gleam operating hours - WRITE THEM DOWN!"
 ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_elec,'g-')
 ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_end_average_for_date_range_elec,'b-')
 ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,peak_day_for_date_range_elec,'r-')
 pl.show()
 
-print "Showing you the average day stats for STEAM so you can gleam operating hours - WRITE THEM DOWN!"
-ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_steam,'g-')
-ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_end_average_for_date_range_steam,'b-')
-ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,peak_day_for_date_range_steam,'r-')
-pl.show()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-## ------------THE GRAPH OF AVERAGE DAY HAS TO BE SHOWN ANYWHERE BEFORE THIS FOR NOW-----------------
-
+## Then the user has to close the grpah and enter those numbers. 
 bucket_open_closed_elec=wam.get_operating_hours_from_user()
 
 bucket_operating_hours_by_day_elec=[]
@@ -675,17 +655,29 @@ for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
     bucket_operating_hours_by_day_elec.append(bucket_open_closed_elec)
 
 
+## Then plot for steam so they can enter that in - eventually, the code will
+## behave properly for any number of columns but I keep putting that off for some reason
+print "Showing you the average day stats for STEAM so you can gleam operating hours - WRITE THEM DOWN!"
+ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_steam,'g-')
+ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_end_average_for_date_range_steam,'b-')
+ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,peak_day_for_date_range_steam,'r-')
+pl.show()
+
+## User enters operating hours in here. 
 bucket_open_closed_steam=wam.get_operating_hours_from_user()
 
 bucket_operating_hours_by_day_steam=[]
 for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
     bucket_operating_hours_by_day_steam.append(bucket_open_closed_steam)
 
+
+
 bucketed_usage_elec=wam.get_bucketed_usage(bucket_operating_hours_by_day_elec, date_list, start_date_index, end_date_index,
                        interval_usage_by_day_elec)
 
 bucketed_usage_steam=wam.get_bucketed_usage(bucket_operating_hours_by_day_steam, date_list, start_date_index, end_date_index,
                        interval_usage_by_day_steam)
+
 
 #printing usage to new excel sheet
 output_book_buckets=chan.add_to_filename(book_name," - Bucketed Usage - "+str(int(time_list[0])))

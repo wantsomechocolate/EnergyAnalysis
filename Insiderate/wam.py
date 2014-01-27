@@ -547,24 +547,28 @@ def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_ran
     return [wkday_ave_def,wkend_ave_def,peak_day_usage_def,peak_date_def]
 
 
-def get_bucket_date_range_from_user():
+def get_bucket_date_range_from_user(end_date=""):
     #bucket_end_date_text="6/30/2013"
 
 ##    bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
 ##    
 ##    bucket_end_date=parser.parse(bucket_end_date_text)
 
-    got_to_end=False
-    while got_to_end==False:
-        try:
-            bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
-            if len(bucket_end_date_text)<=5:
-                error="str"+5
-            else:
-                bucket_end_date=parser.parse(bucket_end_date_text)
-                got_to_end=True
-        except:
-            print "Date format not recognized or date does not exist"
+    if end_date=="":
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
+                if len(bucket_end_date_text)<=5:
+                    error="str"+5
+                else:
+                    bucket_end_date=parser.parse(bucket_end_date_text)
+                    got_to_end=True
+            except:
+                print "Date format not recognized or date does not exist"
+
+    else:
+        bucket_end_date=end_date
 
             
     while bucket_end_date.isoweekday()!=1:

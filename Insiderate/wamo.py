@@ -18,31 +18,30 @@ class MyWorkbook(object):
 
         ## Load the workbook
         #self.wb = load_workbook(book_name)
+
+        ## Load workbook using the pandas library - so much faster!!!!
         self.wb = pd.ExcelFile(book_name)
 
         ## Get all the sheet names - the order of this list will be the
         ## same order as the sheets in the book I believe (hope)
         #self.sheet_names=self.wb.get_sheet_names()
+
+        ## Again use the pandas
         self.sheet_names=self.wb.sheet_names
 
+        ## This will store all of the sheet objects
         self.sheet_objects=[]
-
-        #self.sheet_data_objects=[]
         
         ## For each sheet, go in and get the addresses and actual data for each row and
         ## and column that contain any data. 
         for i in range(len(self.sheet_names)):
 
             ## This initializes a sheet object, which takes the sheet name
-            ## and returns the address of the smallest rectangle that includes
-            ## all the data.
+            ## and returns the data in that sheet as a list of lists representing columns.
             self.sheet_objects.append(MySheet(self.wb, self.sheet_names[i]))
 
-            ## This initializes a sheet data object which takes the addresses and
-            ## returns the data.
-            #self.sheet_data_objects.append(MySheetData(self.sheet_objects[i].sheet_data_range))
-
         ## This creates as many objects as sheets with the actual data inside (including the headings)
+        ## and puts it in a dictionary keyed with the sheet names
         self.work_book_data={}
         self.work_book_data_no_headings={}
         for i in range(len(self.sheet_names)):
@@ -59,37 +58,33 @@ class MyWorkbook(object):
 
         return len(self.sheet_objects)
 
-## A sheet object has all the data form the sheet in it.
+## A sheet object has all the data from the sheet in it.
 ## Sheet data range is a bunch of cell addresses, sheet data is the data at those addresses.
 class MySheet(object):
 
     def __init__(self, workbook, sheet_name):
 
+        ## I believe this produces a generator? You can print the data and iterate the data
+        ## but it isn't a python list
         self.sheet=workbook.parse(sheet_name)
+
+        ## This values operator puts all the data without headings(:/) into a list of lists
+        ## representing rows
         self.sheet_data_by_row=self.sheet.values
+
+        ## Zip it to represent columns instead. 
         self.sheet_data_by_col=zip(*self.sheet_data_by_row)
 
         self.sheet_data=[]
 
+        ## Here sheet.columns actually only returns a list of strings, one item for each row
+        ## aka the text at the top of the column. 
         for i in range(len(list(self.sheet.columns))):
+            ## this actually puts the sheet name back into the list as the first entry
             self.sheet_data.append(list(self.sheet_data_by_col[i]))
+            ## because downstream of this it expects it that way. I can rework in the future.
             self.sheet_data[i].insert(0,[list(self.sheet.columns)[i]])
             
-            
-
-######        self.sheet=workbook.get_sheet_by_name(sheet_name)
-######
-######        self.sheet_data_range=self.sheet.columns
-######
-######        self.sheet_data=[]
-######        for i in range(len(self.sheet_data_range)):
-######            self.sheet_data.append([])
-######
-######        for i in range(len(self.sheet_data_range)):
-######            for j in range(len(self.sheet_data_range[i])):
-######                self.sheet_data[i].append(self.sheet_data_range[i][j].value)
-
-        
 
 class IntervalData(object):
 

@@ -12,36 +12,35 @@ from openpyxl import Workbook, load_workbook
 #import wamo as wamo
 #import pylab as pl
 
-##----------------------------------------------------------------------------------------------------------------
+##-----------------------------------------------------------------------
+
 divider="\n---------------------------------------------------------------------------\n"
-##----------------------------------------------------------------------------------------------------------------
 
-print divider
-print "-------------------Welcome to Insiderate (In-sid-er-ate)-------------------"
-print divider
+##-----------------------------------------------------------------------
 
-print "--Please navigate to the .xlsx file containing your data"
-print ""
+print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)-------------------",divider
+
+##-----------------------------------------------------------------------
+
+## Have user navigate to desired book and show them what they chose.
+print "--Please navigate to the .xlsx file containing your data\n"
 book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
 print "--You chose to analyze"+book_name
-print ""
-#-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
+
+##Get range on which to get average day statistics from. 
 print divider
-print ""
-print "--You will now enter the date range for the quarter or month that this report is for"
-print ""
+print "--You will now enter the date range for the QUARTER or MONTH that this report is for\n"
 single_day_stats_date_range=wam.get_date_range_from_user(False)
+
 ##-----------------------------------------------------------------------
 
-## How many similar days do you want to return? Three per year of data might be ok.
-print divider
-
-print "--Now you have to tell me how many days to be used when calculating the band. \
-For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5"
-print ""
-num_matches=chan.getIntegerInput(3,10,"--Just press enter to use the number brackets [5]> ",5,[])
+## How many similar days do you want to return?
+print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
+For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
+default_choice=5
+num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
 
 ##-----------------------------------------------------------------------
 time_list=[]
@@ -49,10 +48,10 @@ time_list.append(time.time())
 ##-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
-print divider
 
-print "--Pulling interval and weather data in from the workbook: ",
+print divider+"\n--Pulling interval and weather data in from the workbook: ",
 a_work_book=wamo.MyWorkbook(book_name)
+
 ##-----------------------------------------------------------------------
 
 ##-----------------------------------------------------------------------
@@ -62,6 +61,7 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 
 
 #------------------------------------------------------------------------
+
 print "--Preparing energy data for analysis: ",
 interval_data_no_headings=a_work_book.work_book_data_no_headings["Interval Usage"]
 interval_data_by_day=wam.interval2day(interval_data_no_headings)
@@ -82,6 +82,7 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 #------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
+
 print "--Creating temperature data for analysis: ",
 interval_weather_no_headings=a_work_book.work_book_data_no_headings["Interval Temp"]                              
 interval_weather_by_day=wam.interval2day(interval_weather_no_headings)             
@@ -92,49 +93,32 @@ date_list=weather_object.date_list
 ts_by_day=weather_object.datetime_list_by_day
 wbt_by_day=weather_object.data_list_by_day
 wbt_daily_ave=weather_object.averages_by_day
-#------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
 time_list.append(time.time())
 print str(int(time_list[-1]-time_list[-2]))+" seconds"
 #------------------------------------------------------------------------
 
-
 ##----------------------------------------------------------------------------------------
 ## Line between old and new
 ##----------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
-## This should pull from a seperately maintained file.
-print divider
 
-print "--Getting the holidays to exclude from the analysis"
+## This should pull from a seperately maintained file.
+print divider+"\n--Getting the holidays to exclude from the analysis"
 print "--The 2011-2014 holidays are currently hardcoded into the source"
 print "--It is every Federal Holiday, plus the day after T-Gives"
-
-
 holidays = wam.getholidays()
-#num_matches=5
+
 #------------------------------------------------------------------------
 
-######current_date=time_stamp_np[0]
-######end_date=time_stamp_np[-1]
-######date_list=[] # - I checked and this is also in order from oldest to newest
-######while current_date<=end_date:
-######    date_list.append(current_date)
-######    current_date=current_date+datetime.timedelta(days=1)
-
-
-## ---------------------Find the N most similar days to each day--------------------
-print divider
-
-print "--Finding similar days based on daily average wetbulb temerature"
+## Find the N most similar days to each day
+print divider+"\n--Finding similar days based on daily average wetbulb temerature"
 print "--We use wetbulb temperature because it more accurately reflects"
 print "--Latent cooling requirements in the summer time. We use average"
 print "--day because a better approach has not yet been implemented : ",
-
 similar_days_by_day=wam.get_n_closest_matches_for_each_item_in_list(wbt_daily_ave, num_matches, date_list, holidays)
-
 
 ## make a list with the right dimensions
 similar_days_by_DATE=[]
@@ -156,14 +140,10 @@ print str(int(time_list[-1]-time_list[-2]))+" seconds"
 #------------------------------------------------------------------------
 
 
-print divider
-
-
 ##------------------------------------------------------------------------------
 ##---------------------Apply weather findings to interval data---------------------
 
-
-print "--Now that we have the similar days, we need to get the data"
+print divider+"\n--Now that we have the similar days, we need to get the data"
 print "--from each of those similar days on an interval basis"
 print "--in order to be able to do the next step"
 print "--So let's do that: ",
@@ -180,13 +160,10 @@ time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
 
-print divider
-
-
 
 ##----------------------Do simple stat calcs------------------------------------
 
-print "--Reorganizing the data and calculating average and stdev for each interval value: ",
+print divider+"\n--Reorganizing the data and calculating average and stdev for each interval value: ",
 
 ## Reorganizing the data to make it easier to get average days and calculate stdev and stuff
 similar_days_interval_usage_by_interval_elec=wam.zip_all_items_of_a_list(similar_days_interval_usage_elec)
@@ -213,13 +190,8 @@ year_of_std_elec=stats_elec[3]
 stats_steam=wam.get_ave_std_of_list_of_list_of_list(similar_days_interval_usage_by_interval_steam)
 year_of_average_days_steam, year_of_std_upper_steam, year_std_lower_steam, year_of_std_steam = stats_steam
 
-##year_of_average_days_steam=stats_steam[0]
-##year_of_std_upper_steam=stats_steam[1]
-##year_of_std_lower_steam=stats_steam[2]
-##year_of_std_steam=stats_steam[3]
 
-
-
+## Preparing some stuff for the graphs. 
 interval_averages_elec=[]
 interval_upper_bound_elec=[]
 interval_lower_bound_elec=[]
@@ -248,10 +220,8 @@ time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
 
+
 print "--Getting the baseline for each day",
-
-## get baseline by day Or should it be for the morning?
-
 ## All of these parameters were based on a single data set. This section of the program really needs some work. 
 num_of_min_values=10
 start_time=1*4
@@ -265,10 +235,12 @@ num_of_min_values=5
 
 baseline_by_day_steam=wam.get_baseline_by_day(interval_usage_by_day_steam,num_of_min_values, start_time, end_time)
 
+
 ##--------------------------------------------------------
 time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
+
 
 print "--Getting the startup time for each day",
 percent_above_baseline=0.03
@@ -286,15 +258,16 @@ start_time_each_day_steam=wam.get_start_time_each_day(interval_time_by_day_steam
                                                       percent_above_baseline,
                                                       thresh)
 
+
 #------------------------------------------------------------------------
 time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 #------------------------------------------------------------------------
 
+
 print "--Getting the shutdown time for each day",
 
 thresh_end=1
-
 percent_above_baseline=0.03
 
 end_time_each_day_elec=wam.get_end_time_each_day(interval_time_by_day_elec,
@@ -313,19 +286,15 @@ end_time_each_day_steam=wam.get_end_time_each_day(interval_time_by_day_steam,
 
 ## The above works ok, maybe I should plot the previous days basline in orange or something to show more info.
 
+
 #------------------------------------------------------------------------
 time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 #------------------------------------------------------------------------
 
 
-
 #------------------------------------------------------------------------
 print "--Getting the single day statistics based on the time period you entered earlier",
-#print "But since these stats depend on time period, I have to get a date range from you first"
-#single_day_stats_date_range=wam.get_date_range_from_user(False)
-#------------------------------------------------------------------------
-
 
 #------------------------------------------------------------------------
 single_day_stats_elec=wam.get_stats_by_day_in_range(interval_usage_by_day_elec, date_list, single_day_stats_date_range)
@@ -419,7 +388,7 @@ except:
 ## I show the electric graph here
 
 
-print "--I'm showing you a graph now for electric usage. You have to observe the operating\
+print "--I'm showing you a graph now for electric usage. You have to observe the operating \
 hours and then enter them (I would right them down). Remember that 'open' is the more common case.\n"
 
 ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_elec,'g-')
@@ -477,13 +446,12 @@ print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 print "--The total runtime to this point was: "+str(round(time_list[-1]-time_list[0],1))+" seconds"
 #------------------------------------------------------------------------
 
+
 print divider
-
-
-
-
-##-----------------------------Printing Shit to Excel------------------------------
-print "Printing results to excel: ",
+##-----------------------------------------------------------------------------------------------
+##-----------------------------Printing to Excel------------------------------
+##-----------------------------------------------------------------------------------------------
+print "--Printing results to excel: ",
 output_book=chan.add_to_filename(book_name," - Results - "+str(int(time_list[0])))
 wb = Workbook()
 
@@ -502,21 +470,21 @@ column_headings=["Time Stamp",
                  "Average Steam Usage (lbs)",
                  "STDEV Steam (lbs)",
                  #"Ave+STD Steam (lbs)",
-                 #"Ave-STD Steam (lbs)"]
+                 #"Ave-STD Steam (lbs)",
                  ]
 
 output_list=[interval_data_no_headings[0],
-             interval_usage_elec,
-             interval_averages_elec,
-             interval_std_elec,
-             #interval_upper_bound_elec,
-             #interval_lower_bound_elec,
-             interval_usage_steam,
-             interval_averages_steam,
-             interval_std_steam,
-             #interval_upper_bound_steam,
-             #interval_lower_bound_steam]
-             ]
+                 interval_usage_elec,
+                 interval_averages_elec,
+                 interval_std_elec,
+                 #interval_upper_bound_elec,
+                 #interval_lower_bound_elec,
+                 interval_usage_steam,
+                 interval_averages_steam,
+                 interval_std_steam,
+                 #interval_upper_bound_steam,
+                 #interval_lower_bound_steam,
+                 ]
 
 ## for all headings i
 for i in range(len(column_headings)):
@@ -612,8 +580,6 @@ for i in range(len(operating_hours_headings)):
         c2.value=operating_hours_data[i][j]
 
 
-
-
 ##-----------------------------------------------------------------------------------
 ## Printing the single day stat results
 
@@ -627,14 +593,6 @@ single_day_stat_headings=["Average WkDay Elec",
                           "Average WkDay Steam",
                           "Average WkEnd Steam",
                           "Peak Day Steam"]
-##                          "Average WkDay WBT",
-##                          "Average WkEnd WBT",
-##                          "Peak Day WBT"]
-
-##wk_day_average_for_date_range_wbt=single_day_stats_wbt[0]
-##wk_end_average_for_date_range_wbt=single_day_stats_wbt[1]
-##peak_day_for_date_range_wbt=single_day_stats_wbt[2]
-##peak_date_for_date_range_wbt=single_day_stats_wbt[3]
 
 #Data
 single_day_stat_data=[wk_day_average_for_date_range_elec,
@@ -643,9 +601,6 @@ single_day_stat_data=[wk_day_average_for_date_range_elec,
                       wk_day_average_for_date_range_steam,
                       wk_end_average_for_date_range_steam,
                       peak_day_for_date_range_steam]
-##                      wk_day_average_for_date_range_wbt,
-##                      wk_end_average_for_date_range_wbt,
-##                      peak_day_for_date_range_wbt]
 
 #Print
 for i in range(len(single_day_stat_headings)):
@@ -683,11 +638,6 @@ single_day_stat_WBT_headings=["Average WkDay WBT",
                               "Average WkEnd WBT",
                               "Peak Day WBT"]
 
-##wk_day_average_for_date_range_wbt=single_day_stats_wbt[0]
-##wk_end_average_for_date_range_wbt=single_day_stats_wbt[1]
-##peak_day_for_date_range_wbt=single_day_stats_wbt[2]
-##peak_date_for_date_range_wbt=single_day_stats_wbt[3]
-
 #Data
 single_day_stat_WBT_data=[wk_day_average_for_date_range_wbt,
                           wk_end_average_for_date_range_wbt,
@@ -712,12 +662,8 @@ c3.value=peak_date_for_date_range_wbt
 
 
 
-
 #---------------------------------------------------------------
-#printing usage to new excel sheet
-#output_book_buckets=chan.add_to_filename(book_name," - Bucketed Usage - "+str(int(time_list[0])))
-
-#wb_buckets = Workbook()
+## Printing bucketed usage
 
 ws_buckets=wb.create_sheet(-1,"Bucketed Usage Elec")
 
@@ -737,18 +683,12 @@ for i in range(len(bucket_headings)):
     c=ws_buckets.cell(row=0,column=i)
     c.value=bucket_headings[i]
 
-    ## for all rows j+1
     for j in range(len(bucket_data[i])):
         c=ws_buckets.cell(row=j+1,column=i)
         c.value=bucket_data[i][j]
 
-#wb_buckets.save(output_book_buckets)
-
-
 ##------------------------------------------------------------------------------------------------
 
-
-#----------------------------------------------------------------------------------------------
 wb.save(output_book)
 
 ##--------------------------------------------------------
@@ -756,178 +696,20 @@ time_list.append(time.time())
 print str(round(time_list[-1]-time_list[-2],1))+" seconds"
 ##--------------------------------------------------------
 
-raw_input("Press 'ENTER' to exit")
+####------------------------------------------------------
+#### Experimenting with printing with pandas
+##import pandas as pd
+###df = pd.DataFrame(bucketed_usage_elec, columns=headers)
+##df = pd.DataFrame(bucketed_usage_elec)
+##df.to_excel('test.xlsx',"Bucketed Usage")
+####------------------------------------------------------
 
-print "Exited Program"
+
+print divider
+
+raw_input("--Press 'ENTER' to exit")
+
+print "--Exited Program"
 
 ##------------------------------------------------------------------------------------------------------------------------------------------
 
-
-
-######## Graph the average weekday so that the user can get the operating hours visually
-######## I calculate the start and stop times for each day, but it isn't very robust
-######## so this is currently the accepted method. 
-######
-######## I show the electric graph here
-######print "Showing you the average day stats for ELECTRIC so you can gleam operating hours - WRITE THEM DOWN!"
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_elec,'g-')
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_end_average_for_date_range_elec,'b-')
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,peak_day_for_date_range_elec,'r-')
-######pl.show()
-######
-######
-######## Then the user has to close the grpah and enter those numbers. 
-######bucket_open_closed_elec=wam.get_operating_hours_from_user()
-######
-######bucket_operating_hours_by_day_elec=[]
-######for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
-######    bucket_operating_hours_by_day_elec.append(bucket_open_closed_elec)
-######
-######
-######## Then plot for steam so they can enter that in - eventually, the code will
-######## behave properly for any number of columns but I keep putting that off for some reason
-######print "Showing you the average day stats for STEAM so you can gleam operating hours - WRITE THEM DOWN!"
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_day_average_for_date_range_steam,'g-')
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,wk_end_average_for_date_range_steam,'b-')
-######ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,peak_day_for_date_range_steam,'r-')
-######pl.show()
-######
-######## User enters operating hours in here. 
-######bucket_open_closed_steam=wam.get_operating_hours_from_user()
-######
-######bucket_operating_hours_by_day_steam=[]
-######for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
-######    bucket_operating_hours_by_day_steam.append(bucket_open_closed_steam)
-######
-######
-######
-######bucketed_usage_elec=wam.get_bucketed_usage(bucket_operating_hours_by_day_elec, date_list, start_date_index, end_date_index,
-######                       interval_usage_by_day_elec)
-######
-######bucketed_usage_steam=wam.get_bucketed_usage(bucket_operating_hours_by_day_steam, date_list, start_date_index, end_date_index,
-######                       interval_usage_by_day_steam)
-
-
-#######printing usage to new excel sheet
-######output_book_buckets=chan.add_to_filename(book_name," - Bucketed Usage - "+str(int(time_list[0])))
-######
-######wb_buckets = Workbook()
-######
-######ws_buckets=wb_buckets.create_sheet(0,"Bucketed Usage Elec")
-######
-######bucket_headings=["Date", "Usage Open Hours Elec", "Usage Closed Hours Elec", "Usage Open Hours Steam", "Usage Closed Hours Steam"]
-######
-######bucket_data=[bucketed_usage_elec[2], bucketed_usage_elec[0], bucketed_usage_elec[1], bucketed_usage_steam[0], bucketed_usage_steam[1]]
-######
-######for i in range(len(bucket_headings)):
-######    c=ws_buckets.cell(row=0,column=i)
-######    c.value=bucket_headings[i]
-######
-######    ## for all rows j+1
-######    for j in range(len(bucket_data[i])):
-######        c=ws_buckets.cell(row=j+1,column=i)
-######        c.value=bucket_data[i][j]
-######
-######wb_buckets.save(output_book_buckets)
-
-
-
-################ ----------------------------Plotting Suff-------------------------------------
-##############print "Starting plot module, exit graph and go to interpreter to plot another day"
-##############
-##############exit_flag="N"
-###############exit_flag=0
-###############day_of_year=0
-##############date_of_year="12/25/2013"
-##############index=50
-##############while exit_flag!="Y":
-##############    
-##############    steam_or_elec=raw_input("elec[0] or steam[1]")
-##############
-##############    if steam_or_elec=='0':
-##############
-##############        try:
-##############
-##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],interval_usage_by_day_elec[index],'g-')
-##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_upper_elec[index],'b-')
-##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],year_of_std_lower_elec[index],'r-')
-##############            plot_band=pl.plot_date(interval_time_by_day_elec[index],baseline_by_day_elec[index],'y')
-##############            
-##############            xaxisdate=interval_time_by_day_elec[index][0]
-##############            
-##############            xaxislabel=(
-##############                           "Year:"         + str(xaxisdate.year)
-##############                        + " Month:"        + str(xaxisdate.month)
-##############                        + " Day of month:" + str(xaxisdate.day)
-##############                        + " Day of week:"  + str(xaxisdate.isoweekday())
-##############                           )
-##############            try:
-##############                xaxislabel+=" Start Time:" + str(start_time_each_day_elec[index].hour)+":"+str(start_time_each_day_elec[index].minute)
-##############            except:
-##############                xaxislabel+=" Start Time: Not Found"
-##############
-##############            try:
-##############                xaxislabel+=" End Time:"   + str(end_time_each_day_elec[index].hour)+":"+str(end_time_each_day_elec[index].minute)
-##############            except:
-##############                xaxislabel+=" End Time: Not Found occured next day"
-##############            
-##############            
-##############            plot_band=pl.xlabel(xaxislabel)
-##############            pl.show()
-##############            print "Got to end of plot try block"
-##############
-##############        except:
-##############            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
-##############
-##############        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
-##############        #exit_flag=exit_flag+1
-##############        try:
-##############            index=int(exit_flag)-1
-##############        except:
-##############            index=exit_flag
-##############
-##############    elif steam_or_elec=='1':
-##############
-##############        try:
-##############
-##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],interval_usage_by_day_steam[index],'g-')
-##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_upper_steam[index],'b-')
-##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],year_of_std_lower_steam[index],'r-')
-##############            plot_band=pl.plot_date(interval_time_by_day_steam[index],baseline_by_day_steam[index],'y')
-##############            
-##############            xaxisdate=interval_time_by_day_steam[index][0]
-##############            
-##############            xaxislabel=(
-##############                           "Year:"         + str(xaxisdate.year)
-##############                        + " Month:"        + str(xaxisdate.month)
-##############                        + " Day of month:" + str(xaxisdate.day)
-##############                        + " Day of week:"  + str(xaxisdate.isoweekday())
-##############                           )
-##############            try:
-##############                xaxislabel+=" Start Time:" + str(start_time_each_day_steam[index].hour)+":"+str(start_time_each_day_steam[index].minute)
-##############            except:
-##############                xaxislabel+=" Start Time: Not Found"
-##############
-##############            try:
-##############                xaxislabel+=" End Time:"   + str(end_time_each_day_steam[index].hour)+":"+str(end_time_each_day_steam[index].minute)
-##############            except:
-##############                xaxislabel+=" End Time: Not Found occured next day"
-##############            
-##############            
-##############            plot_band=pl.xlabel(xaxislabel)
-##############            pl.show()
-##############            print "Got to end of plot try block"
-##############
-##############        except:
-##############            print "Are you sure you entered either 'Y' or an int from 1 to MAX, inclusive?"
-##############
-##############        exit_flag=raw_input(["Y to exit or num from 1 to MAX to plot a day"])
-##############        #exit_flag=exit_flag+1
-##############        try:
-##############            index=int(exit_flag)-1
-##############        except:
-##############            index=exit_flag
-##############
-##############    else:
-##############        print "Try again"
-##############

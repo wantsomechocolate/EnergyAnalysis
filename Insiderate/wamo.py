@@ -132,7 +132,6 @@ class IntervalData(object):
 
         return date_list_def
 
-        
 
 ##    def get_average_weekday(self):
 ##    def get_average_weekend(self):

@@ -466,23 +466,23 @@ def get_date_range_from_user(debug_mode):
         got_to_end=False
         while got_to_end==False:
             try:
-                start_date=raw_input("Start Date - All common formats are fine, use full year: ")
+                start_date=raw_input("--Start Date - All common formats are fine, use full year: ")
                 sd_obj=parser.parse(start_date)
                 got_to_end=True
             except:
-                print "Date format not recognized or date does not exist"
+                print "--Date format not recognized or date does not exist"
 
         got_to_end=False
         while got_to_end==False:
             try:
-                end_date=raw_input("End Date - All common formats are fine, use full year: ")
+                end_date=raw_input("--End Date - All common formats are fine, use full year: ")
                 ed_obj=parser.parse(end_date)
                 if sd_obj<ed_obj:
                     got_to_end=True
                 else:
-                    print "What! enter the dates in order, fool!"
+                    print "--What! enter the dates in order, fool!"
             except:
-                print "Date format not recognized or date does not exist"
+                print "--Date format not recognized or date does not exist"
 
         return [sd_obj, ed_obj]
 
@@ -587,20 +587,20 @@ def get_operating_hours_from_user():
     acceptable_answers=["open","closed"]
     while got_to_end==False:
         
-        bucket_specifying_open_or_closed=raw_input("specifying open range or closed range? >>> ")
+        bucket_specifying_open_or_closed=raw_input("--Are you specifying a time when the building is open, or when it is closed? >>> ")
 
         if bucket_specifying_open_or_closed in acceptable_answers:
             got_to_end=True
         else:
-            print "please input either open or closed"
+            print "--Please input either open or closed"
 
     bucket_start_day_text="0:00"
     #bucket_start_time_text="6:00"
     #bucket_end_time_text="18:00"
     bucket_end_day_text="23:45"
 
-    bucket_start_time_text=raw_input("Input start time. No error checking here so be careful. hh:mm >>> ")
-    bucket_end_time_text=raw_input("Input end time. No error checking here so be careful. hh:mm >>> ")
+    bucket_start_time_text=raw_input("--Input start time. No error checking here so be careful. hh:mm >>> ")
+    bucket_end_time_text=raw_input("--Input end time. No error checking here so be careful. hh:mm >>> ")
 
     bucket_start_day=parser.parse(bucket_start_day_text)
     bucket_start_time=parser.parse(bucket_start_time_text)

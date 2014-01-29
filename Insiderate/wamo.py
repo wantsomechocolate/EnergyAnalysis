@@ -87,11 +87,15 @@ class MySheet(object):
 
 ## Check this shit out!!!!!!
 
-########>>> import pandas as pd
-########>>> wb = pd.ExcelFile('DataInput2013.xlsx')
-########>>> sheet=wb.parse('Interval Usage')
-########>>> timestamps=sheet.DateTimeStamp
-########>>> elap=timestamps[len(timestamps)-1]-timestamps[0]
+##import pandas as pd
+##wb = pd.ExcelFile('DataInput2013.xlsx')
+##sheet=wb.parse('Interval Usage')
+##timestamps=sheet.DateTimeStamp
+##elap=timestamps[len(timestamps)-1]-timestamps[0]
+##elec=sheet['Electric(kWh)']
+##headings=sheet.columns
+##for heading in headings:
+##    print sheet[heading][0]
             
 
 class IntervalData(object):

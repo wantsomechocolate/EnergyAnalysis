@@ -1,32 +1,20 @@
-import datetime
-import os, time #wam
-import numpy as np
+
+import os, time, datetime
+import numpy as np, pandas as pd
 from marbles import glass as chan
 from openpyxl import Workbook
 from openpyxl import load_workbook
-import wam as wam
-import wamo as wamo
+import wam as wam, wamo as wamo
 from dateutil import parser
-import pandas as pd
 
-#import pylab as pl
 
 class MyWorkbook(object):
 
-    ## As soon as this class is called...
     def __init__(self, book_name):
-
-        ## Load the workbook
-        #self.wb = load_workbook(book_name)
 
         ## Load workbook using the pandas library - so much faster!!!!  
         self.wb = pd.ExcelFile(book_name)
 
-        ## Get all the sheet names - the order of this list will be the
-        ## same order as the sheets in the book I believe (hope)
-        #self.sheet_names=self.wb.get_sheet_names()
-
-        ## Again use the pandas
         self.sheet_names=self.wb.sheet_names
 
         ## This will store all of the sheet objects
@@ -144,9 +132,3 @@ class IntervalData(object):
 
         return date_list_def
 
-
-##    def get_average_weekday(self):
-##    def get_average_weekend(self):
-##    def get_peak_day(self):
-##    def get_start_and_end_time_from_ave_wkday(self):
-##    def get_bucketed_usage(self):

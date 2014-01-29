@@ -19,7 +19,7 @@ class MyWorkbook(object):
         ## Load the workbook
         #self.wb = load_workbook(book_name)
 
-        ## Load workbook using the pandas library - so much faster!!!!
+        ## Load workbook using the pandas library - so much faster!!!!  
         self.wb = pd.ExcelFile(book_name)
 
         ## Get all the sheet names - the order of this list will be the
@@ -84,6 +84,14 @@ class MySheet(object):
             self.sheet_data.append(list(self.sheet_data_by_col[i]))
             ## because downstream of this it expects it that way. I can rework in the future.
             self.sheet_data[i].insert(0,[list(self.sheet.columns)[i]])
+
+## Check this shit out!!!!!!
+
+########>>> import pandas as pd
+########>>> wb = pd.ExcelFile('DataInput2013.xlsx')
+########>>> sheet=wb.parse('Interval Usage')
+########>>> timestamps=sheet.DateTimeStamp
+########>>> elap=timestamps[len(timestamps)-1]-timestamps[0]
             
 
 class IntervalData(object):

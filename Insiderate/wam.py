@@ -561,7 +561,7 @@ def get_date_range_from_user(debug_mode):
         return [sd_obj, ed_obj]
 
     else:
-        return [datetime.datetime(2013,6,1), datetime.datetime(2013,9,29)]
+        return [datetime.datetime(2013,7,1), datetime.datetime(2013,9,30)]
 
 
 def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):

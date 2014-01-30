@@ -8,71 +8,6 @@ import wam as wam, wamo as wamo
 from dateutil import parser
 
 
-class MyWorkbook(object):
-
-    def __init__(self, book_name):
-
-        ## Load workbook using the pandas library - so much faster!!!!  
-        self.wb = pd.ExcelFile(book_name)
-
-        self.sheet_names=self.wb.sheet_names
-
-        ## This will store all of the sheet objects
-        self.sheet_objects=[]
-        
-        ## For each sheet, go in and get the addresses and actual data for each row and
-        ## and column that contain any data. 
-        for i in range(len(self.sheet_names)):
-
-            ## This initializes a sheet object, which takes the sheet name
-            ## and returns the data in that sheet as a list of lists representing columns.
-            self.sheet_objects.append(MySheet(self.wb, self.sheet_names[i]))
-
-        ## This creates as many objects as sheets with the actual data inside (including the headings)
-        ## and puts it in a dictionary keyed with the sheet names
-        self.work_book_data={}
-        self.work_book_data_no_headings={}
-        for i in range(len(self.sheet_names)):
-            self.work_book_data[self.sheet_names[i]]=self.sheet_objects[i].sheet_data
-
-            no_heading_intermediate=[]
-            for k in range(len(self.sheet_objects[i].sheet_data)):
-                no_heading_intermediate.append(self.sheet_objects[i].sheet_data[k][1:])
-
-            self.work_book_data_no_headings[self.sheet_names[i]]=no_heading_intermediate
-            
-    
-    def get_num_sheets(self):
-
-        return len(self.sheet_objects)
-
-## A sheet object has all the data from the sheet in it.
-## Sheet data range is a bunch of cell addresses, sheet data is the data at those addresses.
-class MySheet(object):
-
-    def __init__(self, workbook, sheet_name):
-
-        ## I believe this produces a generator? You can print the data and iterate the data
-        ## but it isn't a python list
-        self.sheet=workbook.parse(sheet_name)
-
-        ## This values operator puts all the data without headings(:/) into a list of lists
-        ## representing rows
-        self.sheet_data_by_row=self.sheet.values
-
-        ## Zip it to represent columns instead. 
-        self.sheet_data_by_col=zip(*self.sheet_data_by_row)
-
-        self.sheet_data=[]
-
-        ## Here sheet.columns actually only returns a list of strings, one item for each row
-        ## aka the text at the top of the column. 
-        for i in range(len(list(self.sheet.columns))):
-            ## this actually puts the sheet name back into the list as the first entry
-            self.sheet_data.append(list(self.sheet_data_by_col[i]))
-            ## because downstream of this it expects it that way. I can rework in the future.
-            self.sheet_data[i].insert(0,[list(self.sheet.columns)[i]])
-
 ## Check this shit out!!!!!!
 
 ##import pandas as pd
@@ -88,21 +23,23 @@ class MySheet(object):
 
 class IntervalData(object):
 
-    def __init__(self, interval_data_def, interval_data_by_day_def):
+    def __init__(self, pandas_data_frame):
 
-        self.datetime_list=interval_data_def[0]
+        self.dataframe=pandas_data_frame
+
+        self.datetime_list=pandas_data_frame[pandas_data_frame.columns[0]]
         
-        self.data_list=interval_data_def[1]
+        #self.data_list=interval_data_def[1]
 
-        self.datetime_list_by_day=interval_data_by_day_def[0]
+        #self.datetime_list_by_day=self.interval2day(interval_data_def[0])
 
-        self.data_list_by_day=interval_data_by_day_def[1]
+        #self.data_list_by_day=interval_data_by_day_def[1]
 
-        self.averages_by_day=self.list_of_lists_2_list_of_ave(self.data_list_by_day)
+        #self.averages_by_day=self.list_of_lists_2_list_of_ave(self.data_list_by_day)
 
-        self.num_matches=5
+        #self.num_matches=5
 
-        self.date_list=self.get_date_list(self.datetime_list)
+        #self.date_list=self.get_date_list(self.datetime_list)
 
     def get_elapsed_days(self):
         
@@ -131,4 +68,77 @@ class IntervalData(object):
             current_date_def=current_date_def+datetime.timedelta(days=1)
 
         return date_list_def
+
+    def interval2day(interval_data_def):
+
+
+        number_of_non_date_columns_def=len(interval_data_def[1:])
+        
+        number_of_columns_def=len(interval_data_def)
+
+        ## The datetime is assumed to be the first list 
+        datetime_list_def=interval_data_def[0]
+
+        ## Create space for the lists of data (exclude the date)
+        data_lists_def=[]
+
+        ## Now I have a list of at least one other list, but possibly more
+        for i in range(1,number_of_columns_def):
+            
+            data_lists_def.append(interval_data_def[i])
+
+
+        ## Get the first date (assumed to be the earliest date)
+        current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
+
+        ## Get the last date (assumed to be the most recent date)
+        end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
+
+        ## Prepare for creation of date list
+        date_list_def=[]
+        
+        ## This is done this way at the moment in case there are missing dates, at least every day will still have
+        ## a space allocated for it. 
+        while current_date_def<=end_date_def:
+            date_list_def.append(current_date_def)
+            current_date_def=current_date_def+datetime.timedelta(days=1)
+
+        ## Make a number of unique lists
+        unique_lists=[]
+        for i in range(number_of_columns_def):
+            unique_lists.append([])
+            for j in range(len(date_list_def)):
+                unique_lists[i].append([])
+
+        datetime_list_by_day_def=unique_lists[0]
+                                       
+        data_lists_by_day_def=[]
+        ## For as many columns of data there are
+        for i in range(1,number_of_columns_def):
+            ## Make room for that column of data to be sorted by day
+            data_lists_by_day_def.append(unique_lists[i])
+
+            
+        ## Go through the huge list and put everything where it goes.
+        ## FOR EVERY SINGLE DATA POINT in the original datetime list
+        for i in range(len(datetime_list_def)):
+
+            ## Strip the time off of the datetime in the interval datetime list
+            interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
+
+            ## Then find the index for that day in the date list
+            index_def=date_list_def.index(interval_data_day_def)
+            #print index_def
+
+            datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+
+            for k in range(len(interval_data_def[1:])):
+                data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+                                           
+        return_list_def=[]
+
+        for i in range(len(interval_data_def[1:])):
+            return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
+
+        return return_list_def
 

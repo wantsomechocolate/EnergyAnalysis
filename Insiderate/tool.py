@@ -75,10 +75,29 @@ for sheet_name in sheet_names:
     
     
 
->>> df=interval_data_objects[sheet_names[0]].dataframe
->>> df['Date']=df['DateTimeStamp'].apply(datetime2date)
+df=interval_data_objects[sheet_names[0]].dataframe
+
+df['Date']=df[df.columns[0]].apply(datetime2date)
+
+group=df.groupby('Date')
+
+#group.get_group(datetime.date(2013,6,15)) ## key is expecting a date
+
+group1=group[df.columns[1]].agg({'Mean':np.mean,
+			    'Max':np.max})
 
 
+##Weather
+
+
+df2=interval_data_objects[sheet_names[1]].dataframe
+
+df2['Date']=df2[df2.columns[0]].apply(datetime2date)
+
+df2_gbd=df2.groupby('Date')
+
+aveWbt=df2_gbd[df2.columns[1]].agg({'Mean' : np.mean,
+                                    'Max':np.max})
 
 
 

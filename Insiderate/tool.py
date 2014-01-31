@@ -24,7 +24,8 @@ print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)---------
 
 ## Have user navigate to desired book and show them what they chose.
 print "--Please navigate to the .xlsx file containing your data\n"
-book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
+#book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
+book_name='DataInput2013.xlsx'
 print "--You chose to analyze"+book_name
 
 ##-----------------------------------------------------------------------
@@ -51,6 +52,11 @@ time_list.append(time.time())
 
 ##-----------------------------------------------------------------------
 
+def datetime2date(datetime):
+    return datetime.date()
+
+
+
 print divider+"\n--Pulling interval and weather data in from the workbook: ",
 
 wb = pd.ExcelFile(book_name)
@@ -69,7 +75,8 @@ for sheet_name in sheet_names:
     
     
 
-
+>>> df=interval_data_objects[sheet_names[0]].dataframe
+>>> df['Date']=df['DateTimeStamp'].apply(datetime2date)
 
 
 

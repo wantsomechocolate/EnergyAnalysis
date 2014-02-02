@@ -7,11 +7,6 @@ from dateutil import parser
 from marbles import glass as chan
 from openpyxl import Workbook, load_workbook
 
-#import datetime
-#from openpyxl import load_workbook
-#import wamo as wamo
-#import pylab as pl
-
 ##---------------------------------------------------------------------------------------------------------------------------------------------------
 
 divider="\n---------------------------------------------------------------------------\n"
@@ -79,16 +74,15 @@ df=interval_data_objects[sheet_names[0]].dataframe
 
 df['Date']=df[df.columns[0]].apply(datetime2date)
 
-group=df.groupby('Date')
+df_gbd=df.groupby('Date')
 
-#group.get_group(datetime.date(2013,6,15)) ## key is expecting a date
-
-group1=group[df.columns[1]].agg({'Mean':np.mean,
+group1=df_gbd[df.columns[1]].agg({'Mean':np.mean,
 			    'Max':np.max})
 
 
-##Weather
 
+
+##Weather
 
 df2=interval_data_objects[sheet_names[1]].dataframe
 
@@ -96,30 +90,48 @@ df2['Date']=df2[df2.columns[0]].apply(datetime2date)
 
 df2_gbd=df2.groupby('Date')
 
-aveWbt=df2_gbd[df2.columns[1]].agg({'Mean' : np.mean,
-                                    'Max':np.max})
+aveWbt=df2_gbd[df2.columns[1]].agg({'Mean' : np.mean})
+
+wbt_daily_ave=aveWbt['Mean']
+
+date_list=aveWbt.index
+
+holidays = wam.getholidays()
+
+similar_days_by_day=wam.get_n_closest_matches_for_each_item_in_list(wbt_daily_ave, num_matches, date_list, holidays)
+
+# make a list with the right dimensions
+similar_days_by_DATE=[]
+for i in range(len(similar_days_by_day)):
+    similar_days_by_DATE.append([])
+
+## Because the get_n_closest..... functions returns a list of list indices instead of a list of datetime objects
+## Use those indicies to get the corresponding datetime objects.
+for i in range(len(similar_days_by_day)):
+    for j in range(len(similar_days_by_day[i])):
+        similar_days_by_DATE[i].append(date_list[similar_days_by_day[i][j]])
+
+## For printing purposes/ putting back in data frame
+similar_days_by_day_zipped = zip(*similar_days_by_day)
+similar_days_by_DATE_zipped = zip(*similar_days_by_DATE)
+
+
+for col in range(len(similar_days_by_DATE_zipped)):
+    aveWbt['Similar Date '+str(col+1)]=similar_days_by_DATE_zipped[col]
+
+ave_wbt_of_similar_days=[]
+
+for i in range(num_matches):
+    ave_wbt_of_similar_days.append([])
+
+for i in range(len(similar_days_by_day_zipped)):
+    for j in range(len(similar_days_by_day_zipped[i])):
+        ave_wbt_of_similar_days[i].append(wbt_daily_ave[similar_days_by_day_zipped[i][j]])
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+for col in range(len(ave_wbt_of_similar_days)):
+    aveWbt['Similar WBT '+str(col+1)]=ave_wbt_of_similar_days[col]
 
 
 
@@ -232,6 +244,21 @@ aveWbt=df2_gbd[df2.columns[1]].agg({'Mean' : np.mean,
 ###############------------------------------------------------------------------------
 ##############
 ##############
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 ################------------------------------------------------------------------------------
 ################---------------------Apply weather findings to interval data---------------------
 ##############

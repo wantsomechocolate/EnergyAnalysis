@@ -290,7 +290,7 @@ def use_list_of_list_of_indices_to_group_a_list_of_lists(main_list_def,list_of_l
 
     main_list_with_criteria_def=[]
 
-    ## for item in sim days by day (each item will be a list of ints corresponding to days aka list indices)
+    ## for item in sim days by day (each item will be a list of ints corresponding to list indices)
     for i in range(len(list_of_list_indices_def)):
 
         ## an interim variable to hold a single day?

@@ -7,243 +7,61 @@ from openpyxl import load_workbook
 import wam as wam
 import wamo as wamo
 from dateutil import parser
-#import pylab as pl
-
-def interval2day(interval_data_def):
 
 
-    number_of_non_date_columns_def=len(interval_data_def[1:])
+def get_excluded_days():
+
+    ## this filename is hardcoded in, the file will be shipped with
+    ## the program so that users can add to it. 
+    filename='exclude_days.txt'
+    fh=open(filename,'r')
+    contents=fh.readlines()
+    exclude_days=[]
+    for item in contents:
+        if len(item.split())>0:
+            exclude_days.append(parser.parse(item.split()[0]).date())
+    return exclude_days
+
+
+def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_days_def):
+
+    ## For every number in this list, I need to find the n closest numbers from the same list
+    list_of_nums_def=data_frame_def[data_frame_def.columns[0]]
+    print "list of nums length: "+ str(len(list_of_nums_def))
+
+    ## But each number is associated with a date and I can only choose numbers from the same day of the week
+    ## and there some days that are excluded for being holidays.
+    criteria_date_def=data_frame_def.index
+    print "criteria date list length: "+str(len(criteria_date_def))
+
     
-    number_of_columns_def=len(interval_data_def)
-
-    ## The datetime is assumed to be the first list 
-    datetime_list_def=interval_data_def[0]
-
-    ## Create space for the lists of data (exclude the date)
-    data_lists_def=[]
-
-    ## Now I have a list of at least one other list, but possibly more
-    for i in range(1,number_of_columns_def):
-        
-        data_lists_def.append(interval_data_def[i])
-
-
-    ## Get the first date (assumed to be the earliest date)
-    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
-
-    ## Get the last date (assumed to be the most recent date)
-    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
-
-    ## Prepare for creation of date list
-    date_list_def=[]
-    
-    ## This is done this way at the moment in case there are missing dates, at least every day will still have
-    ## a space allocated for it. 
-    while current_date_def<=end_date_def:
-        date_list_def.append(current_date_def)
-        current_date_def=current_date_def+datetime.timedelta(days=1)
-
-    ## Make a number of unique lists
-    unique_lists=[]
-    for i in range(number_of_columns_def):
-        unique_lists.append([])
-        for j in range(len(date_list_def)):
-            unique_lists[i].append([])
-
-    datetime_list_by_day_def=unique_lists[0]
-                                   
-    data_lists_by_day_def=[]
-    ## For as many columns of data there are
-    for i in range(1,number_of_columns_def):
-        ## Make room for that column of data to be sorted by day
-        data_lists_by_day_def.append(unique_lists[i])
-
-        
-    ## Go through the huge list and put everything where it goes.
-    ## FOR EVERY SINGLE DATA POINT in the original datetime list
-    for i in range(len(datetime_list_def)):
-
-        ## Strip the time off of the datetime in the interval datetime list
-        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
-
-        ## Then find the index for that day in the date list
-        index_def=date_list_def.index(interval_data_day_def)
-        #print index_def
-
-        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
-
-        for k in range(len(interval_data_def[1:])):
-            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
-                                       
-    return_list_def=[]
-
-    for i in range(len(interval_data_def[1:])):
-        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
-
-    return return_list_def
-
-def interval2dayPandas(interval_data_def):
-
-
-    number_of_non_date_columns_def=len(interval_data_def[1:])
-    
-    number_of_columns_def=len(interval_data_def)
-
-    ## The datetime is assumed to be the first list 
-    datetime_list_def=interval_data_def[0]
-
-    ## Create space for the lists of data (exclude the date)
-    data_lists_def=[]
-
-    ## Now I have a list of at least one other list, but possibly more
-    for i in range(1,number_of_columns_def):
-        
-        data_lists_def.append(interval_data_def[i])
-
-
-    ## Get the first date (assumed to be the earliest date)
-    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
-
-    ## Get the last date (assumed to be the most recent date)
-    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
-
-    ## Prepare for creation of date list
-    date_list_def=[]
-    
-    ## This is done this way at the moment in case there are missing dates, at least every day will still have
-    ## a space allocated for it. 
-    while current_date_def<=end_date_def:
-        date_list_def.append(current_date_def)
-        current_date_def=current_date_def+datetime.timedelta(days=1)
-
-    ## Make a number of unique lists
-    unique_lists=[]
-    for i in range(number_of_columns_def):
-        unique_lists.append([])
-        for j in range(len(date_list_def)):
-            unique_lists[i].append([])
-
-    datetime_list_by_day_def=unique_lists[0]
-                                   
-    data_lists_by_day_def=[]
-    ## For as many columns of data there are
-    for i in range(1,number_of_columns_def):
-        ## Make room for that column of data to be sorted by day
-        data_lists_by_day_def.append(unique_lists[i])
-
-        
-    ## Go through the huge list and put everything where it goes.
-    ## FOR EVERY SINGLE DATA POINT in the original datetime list
-    for i in range(len(datetime_list_def)):
-
-        ## Strip the time off of the datetime in the interval datetime list
-        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
-
-        ## Then find the index for that day in the date list
-        index_def=date_list_def.index(interval_data_day_def)
-        #print index_def
-
-        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
-
-        for k in range(len(interval_data_def[1:])):
-            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
-                                       
-    return_list_def=[]
-
-    for i in range(len(interval_data_def[1:])):
-        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
-
-    return return_list_def
-
-
-def getholidays():#to_, from_):
-    hollydays_def=[
-                datetime.datetime(2010,12,31),      ## New Day
-                datetime.datetime(2011,1,1),        ## New Day
-                datetime.datetime(2011,1,17),       ## MLK Day
-                datetime.datetime(2011,2,21),       ## Pres Day
-                datetime.datetime(2011,5,30),       ## Mem Day
-                datetime.datetime(2011,7,4),        ## Indy Day
-                datetime.datetime(2011,9,5),        ## Lab Day
-                datetime.datetime(2011,10,10),       ## Col Day
-                datetime.datetime(2011,11,11),      ## Vets Day
-                datetime.datetime(2011,11,24),      ## Thanks Day
-                datetime.datetime(2011,11,25),      ## Coma Day
-                datetime.datetime(2011,12,26),      ## Christ Day
-        
-                datetime.datetime(2012,1,2),        ## New Day
-                datetime.datetime(2012,1,16),       ## MLK Day
-                datetime.datetime(2012,2,20),       ## Pres Day
-                datetime.datetime(2012,5,28),       ## Mem Day
-                datetime.datetime(2012,7,4),        ## Indy Day
-                datetime.datetime(2012,9,3),        ## Lab Day
-                datetime.datetime(2012,10,8),       ## Col Day
-                datetime.datetime(2012,11,12),      ## Vets Day
-                datetime.datetime(2012,11,22),      ## Thanks Day
-                datetime.datetime(2012,11,23),      ## Coma Day
-                datetime.datetime(2012,12,25),      ## Christ Day
-
-                datetime.datetime(2013,1,1),        ## New Day
-                datetime.datetime(2013,1,21),       ## MLK Day
-                datetime.datetime(2013,2,18),       ## Pres Day
-                datetime.datetime(2013,5,27),       ## Mem Day
-                datetime.datetime(2013,7,4),        ## Indy Day
-                datetime.datetime(2013,9,2),        ## Lab Day
-                datetime.datetime(2013,10,14),      ## Col Day
-                datetime.datetime(2013,11,11),      ## Vets Day
-                datetime.datetime(2013,11,28),      ## Thanks Day
-                datetime.datetime(2013,11,29),      ## Coma Day
-                datetime.datetime(2013,12,25),      ## Christ Day
-
-                datetime.datetime(2014,1,1),        ## New Day
-                datetime.datetime(2014,1,20),       ## MLK Day
-                datetime.datetime(2014,2,17),       ## Pres Day
-                datetime.datetime(2014,5,26),       ## Mem Day
-                datetime.datetime(2014,7,4),        ## Indy Day
-                datetime.datetime(2014,9,1),        ## Lab Day
-                datetime.datetime(2014,10,13),      ## Col Day
-                datetime.datetime(2014,11,11),      ## Vets Day
-                datetime.datetime(2014,11,27),      ## Thanks Day
-                datetime.datetime(2014,11,28),      ## Coma Day
-                datetime.datetime(2014,12,25)       ## Christ Day
-                
-                ]
-    
-    return hollydays_def
-
-#This function is working just fine, 6 closest matches is too many for one year of data, it looks like 2 or three would be better.
-# I'm going to use 4 for now. I still want to find out why the averages don't exactly match and I still need to fix the date issue.
-def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,criteria_date_def,exclude_days_def):
-    ## What is N?
-    #min_count=n_count
-    
+    ## Initialize an array to get the indices of the matches for the n numbers for each number in the list
     indices_of_matches_def=[]
 
     ## For each item in the list that this thing is supposed to find the n closest matches for. 
     for i in range(len(list_of_nums_def)):
 
-        day_of_year_def=[]
+
+        list_index_def=[] ## This should be renamed to something else. 
         difference_def=[] 
         min_indices_def=[]
         diff_list_def=[]
 
 
-        ## For each of the closest days that this function is supposed to find
-        for n in range(n_count_def):
-
-            ## This is essentially making a list of 0's with the lenth to fit all the closest days
-            min_indices_def.append(0)
-
         ## Iterate again through the list so that each item can be compared with every other item
         for j in range(len(list_of_nums_def)):
 
-            ## If the current config is good
+            ## If the current config is good (same day of week, not same date, not holiday
             if (criteria_date_def[i].isoweekday()==criteria_date_def[j].isoweekday()) and (i!=j) and (criteria_date_def[j] not in exclude_days_def):
 
                 ## append the list index of the wetbulb that is a potential candidate
-                day_of_year_def.append(j)
+                ## this list will have a length of around 50 for every year of data used.
+                list_index_def.append(j)
 
                 ## try to get the absolute value of the difference between metrics for comparison
+                ## This above list holds indices, this list will hold the difference in the numbers
+                ## for each of those indices
+                ## The try block is in case the list number isn't a number
                 try:
                     difference_def.append(abs(list_of_nums_def[i]-list_of_nums_def[j]))
                 except:
@@ -252,15 +70,22 @@ def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,cri
         ## populate diff_list with what is described above. diff list will be a list of two lists
         ## of the same lenth - one with indices in the original master list and one with abs diff
         ## the list for each iteration through days of the year will only contain days that land
-        ## on the same day of the week
-        diff_list_def=[day_of_year_def,difference_def]
+        ## on the same day of the week; aren't holidays)
+        diff_list_def=[list_index_def,difference_def]
+
+
+        ## For each of the closest days that this function is supposed to find
+        for n in range(n_count_def):
+            ## This is essentially making a list of 0's with the length to fit all the closest days
+            min_indices_def.append(0)
         
         ## For each of the N values I'm supposed to get from the diff list.
         for k in range(len(min_indices_def)):
 
             ## Find the min (closest value to current days) the first time through, this will likely
             ## BE the current day. except for the fact that I excluded that from being a candidate day above.
-            
+
+            ## out of the abs diff list, which has the lowest error
             min_val_def=min(diff_list_def[1])
 
             ## then get the index of that minimum value in diff_list[i]
@@ -273,7 +98,7 @@ def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,cri
             min_indices_def[k]=day_of_year_min_val_occurred_def
 
             ## Then alter diff_list so that the value at the saved index is no longer even
-            ## close to being a match.
+            ## close to being a match. aka a string
             diff_list_def[1][index_of_min_val_in_diff_list_def]="already matched"
 
         ## Add the indices (a list) to a bigger list that will hold a list of the N closest values
@@ -282,7 +107,69 @@ def get_n_closest_matches_for_each_item_in_list(list_of_nums_def,n_count_def,cri
 
         indices_of_matches_def.append(min_indices_def)
 
-    return indices_of_matches_def
+    ## Because the above returns a list of list indices instead of a list of datetime objects
+    ## Use those indicies to get the corresponding datetime objects.
+
+    ## make list of right dimension
+    similar_days_by_DATE=[]
+    for i in range(len(indices_of_matches_def)):
+        similar_days_by_DATE.append([])
+
+
+    for i in range(len(indices_of_matches_def)):
+        for j in range(len(indices_of_matches_def[i])):
+            similar_days_by_DATE[i].append(criteria_date_def[indices_of_matches_def[i][j]])
+
+    
+
+    indices_of_matches_def_zipped = zip(*indices_of_matches_def)
+    similar_days_by_DATE_zipped = zip(*similar_days_by_DATE)
+
+
+
+    ave_wbt_of_similar_days=[]
+    for i in range(n_count_def):
+        ave_wbt_of_similar_days.append([])
+
+    for i in range(len(indices_of_matches_def_zipped)):
+        for j in range(len(indices_of_matches_def_zipped[i])):
+            ave_wbt_of_similar_days[i].append(list_of_nums_def[indices_of_matches_def_zipped[i][j]])
+
+
+    ## Add back to data frame
+
+    for col in range(len(similar_days_by_DATE_zipped)):
+        data_frame_def['Date '+str(col+1)]=similar_days_by_DATE_zipped[col]
+        data_frame_def['Mean '+str(col+1)]=ave_wbt_of_similar_days[col]
+
+##    ## add to dataframe
+##    for col in range(len(ave_wbt_of_similar_days)):
+        
+
+    return data_frame_def
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## This function takes a list of lists and another list of lists and groups the first list based
 ## on the indices in the second one?
@@ -751,3 +638,155 @@ def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_d
 
     return [bucket_open_usage_def, bucket_closed_usage_def, bucket_date_def]
 
+
+
+
+#import pylab as pl
+
+## ----------------This is done by pandas now---------------------
+
+############def interval2day(interval_data_def):
+############
+############
+############    number_of_non_date_columns_def=len(interval_data_def[1:])
+############    
+############    number_of_columns_def=len(interval_data_def)
+############
+############    ## The datetime is assumed to be the first list 
+############    datetime_list_def=interval_data_def[0]
+############
+############    ## Create space for the lists of data (exclude the date)
+############    data_lists_def=[]
+############
+############    ## Now I have a list of at least one other list, but possibly more
+############    for i in range(1,number_of_columns_def):
+############        
+############        data_lists_def.append(interval_data_def[i])
+############
+############
+############    ## Get the first date (assumed to be the earliest date)
+############    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
+############
+############    ## Get the last date (assumed to be the most recent date)
+############    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
+############
+############    ## Prepare for creation of date list
+############    date_list_def=[]
+############    
+############    ## This is done this way at the moment in case there are missing dates, at least every day will still have
+############    ## a space allocated for it. 
+############    while current_date_def<=end_date_def:
+############        date_list_def.append(current_date_def)
+############        current_date_def=current_date_def+datetime.timedelta(days=1)
+############
+############    ## Make a number of unique lists
+############    unique_lists=[]
+############    for i in range(number_of_columns_def):
+############        unique_lists.append([])
+############        for j in range(len(date_list_def)):
+############            unique_lists[i].append([])
+############
+############    datetime_list_by_day_def=unique_lists[0]
+############                                   
+############    data_lists_by_day_def=[]
+############    ## For as many columns of data there are
+############    for i in range(1,number_of_columns_def):
+############        ## Make room for that column of data to be sorted by day
+############        data_lists_by_day_def.append(unique_lists[i])
+############
+############        
+############    ## Go through the huge list and put everything where it goes.
+############    ## FOR EVERY SINGLE DATA POINT in the original datetime list
+############    for i in range(len(datetime_list_def)):
+############
+############        ## Strip the time off of the datetime in the interval datetime list
+############        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
+############
+############        ## Then find the index for that day in the date list
+############        index_def=date_list_def.index(interval_data_day_def)
+############        #print index_def
+############
+############        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+############
+############        for k in range(len(interval_data_def[1:])):
+############            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+############                                       
+############    return_list_def=[]
+############
+############    for i in range(len(interval_data_def[1:])):
+############        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
+############
+############    return return_list_def
+
+##########def interval2dayPandas(interval_data_def):
+##########
+##########
+##########    number_of_non_date_columns_def=len(interval_data_def[1:])
+##########    
+##########    number_of_columns_def=len(interval_data_def)
+##########
+##########    ## The datetime is assumed to be the first list 
+##########    datetime_list_def=interval_data_def[0]
+##########
+##########    ## Create space for the lists of data (exclude the date)
+##########    data_lists_def=[]
+##########
+##########    ## Now I have a list of at least one other list, but possibly more
+##########    for i in range(1,number_of_columns_def):
+##########        
+##########        data_lists_def.append(interval_data_def[i])
+##########
+##########
+##########    ## Get the first date (assumed to be the earliest date)
+##########    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
+##########
+##########    ## Get the last date (assumed to be the most recent date)
+##########    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
+##########
+##########    ## Prepare for creation of date list
+##########    date_list_def=[]
+##########    
+##########    ## This is done this way at the moment in case there are missing dates, at least every day will still have
+##########    ## a space allocated for it. 
+##########    while current_date_def<=end_date_def:
+##########        date_list_def.append(current_date_def)
+##########        current_date_def=current_date_def+datetime.timedelta(days=1)
+##########
+##########    ## Make a number of unique lists
+##########    unique_lists=[]
+##########    for i in range(number_of_columns_def):
+##########        unique_lists.append([])
+##########        for j in range(len(date_list_def)):
+##########            unique_lists[i].append([])
+##########
+##########    datetime_list_by_day_def=unique_lists[0]
+##########                                   
+##########    data_lists_by_day_def=[]
+##########    ## For as many columns of data there are
+##########    for i in range(1,number_of_columns_def):
+##########        ## Make room for that column of data to be sorted by day
+##########        data_lists_by_day_def.append(unique_lists[i])
+##########
+##########        
+##########    ## Go through the huge list and put everything where it goes.
+##########    ## FOR EVERY SINGLE DATA POINT in the original datetime list
+##########    for i in range(len(datetime_list_def)):
+##########
+##########        ## Strip the time off of the datetime in the interval datetime list
+##########        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
+##########
+##########        ## Then find the index for that day in the date list
+##########        index_def=date_list_def.index(interval_data_day_def)
+##########        #print index_def
+##########
+##########        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+##########
+##########        for k in range(len(interval_data_def[1:])):
+##########            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+##########                                       
+##########    return_list_def=[]
+##########
+##########    for i in range(len(interval_data_def[1:])):
+##########        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
+##########
+##########    return return_list_def

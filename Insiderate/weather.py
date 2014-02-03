@@ -10,6 +10,9 @@ num_matches=5
 def datetime2date(datetime):
     return datetime.date()
 
+def datetime2hour(datetime):
+    return datetime.hour
+
 ## A map of all the data
 wb = pd.ExcelFile(book_name)
 
@@ -32,7 +35,19 @@ exclude_days=wam.get_excluded_days()
 ## This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
 ## and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
 ## It adds those results to the data frame and then returns it. 
-weather_daily_data_frame=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_data_frame, num_matches, exclude_days)
+weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_data_frame, num_matches, exclude_days)
+
+
+##weather_interval_data_frame['Hour']=weather_interval_data_frame[weather_interval_data_frame.columns[0]].apply(datetime2hour)
+
+
+
+## Get quarters worth of days from the grouping?
+## Group the groups by type of day?
+## Group the groups by hour?
+
+
+
 
 
 

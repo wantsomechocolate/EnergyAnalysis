@@ -20,6 +20,8 @@ def get_excluded_days():
     for item in contents:
         if len(item.split())>0:
             exclude_days.append(parser.parse(item.split()[0]).date())
+
+    fh.close()
     return exclude_days
 
 
@@ -27,12 +29,12 @@ def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_d
 
     ## For every number in this list, I need to find the n closest numbers from the same list
     list_of_nums_def=data_frame_def[data_frame_def.columns[0]]
-    print "list of nums length: "+ str(len(list_of_nums_def))
+    #print "list of nums length: "+ str(len(list_of_nums_def))
 
     ## But each number is associated with a date and I can only choose numbers from the same day of the week
     ## and there some days that are excluded for being holidays.
     criteria_date_def=data_frame_def.index
-    print "criteria date list length: "+str(len(criteria_date_def))
+    #print "criteria date list length: "+str(len(criteria_date_def))
 
     
     ## Initialize an array to get the indices of the matches for the n numbers for each number in the list

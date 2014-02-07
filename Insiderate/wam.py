@@ -170,10 +170,81 @@ def duplicate_first_column_as_index(df, column_name):
 
 
 
+## To map a datetime column in a pandas dataframeto a date column
+def datetime2date(datetime):
+    return datetime.date()
+
+def datetime2hour(datetime):
+    return datetime.hour
+
+def datetime2bday(datetime):
+
+    date=datetime.date()
+    if date in exclude_days: ## Exclude days is a global variable
+        return 'Weekend'
+    else:
+        pass
+
+    day_of_week=datetime.isoweekday()
+    if day_of_week<=5:
+        return 'Weekday'
+    else:
+        return 'Weekend'
+
+exclude_days=get_excluded_days()
+def prepare_dataframe_for_grouping_by_time(df, sd, ed):
+
+    ## Get slice that will be used for band analysis (1-3 years most likely)
+    df=df[sd:ed]
+    
+    ## From the datetime in column one, make a new column with only the date portion of each date time, for grouping
+    df['Date']=df[df.columns[0]].apply(datetime2date)
+
+    ## Add hour column
+    df['Hour']=df[df.columns[0]].apply(datetime2hour)
+
+    ## Add a daytype that seperates days into Weekday and Holiday/Weekend
+    df['DayType']=df[df.columns[0]].apply(datetime2bday)
+
+    return df
+
+
+def average_daily_metrics(df, sd, ed, col_name):
+
+    ## Now I'm interested only in performance period
+    df=df[sd:ed]
+
+    ## In one swoop, group by daytype and hour, get the averages for each group, then put back into df
+    df=df.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({col_name:np.mean})
+
+    ## Now group based on the new df
+    groups=df.groupby('DayType')
+
+    ## I know there will be two groups because of what the datetime to business day function does.
+    weekday=df.get_group('Weekday')[col_name]
+    weekend=df.get_group('Weekend')[col_name]
+
+    ## Create new df with groups as columns
+    df=pd.DataFrame({'Weekday':weekday.values,'Weekend':weekend.values})
+
+
+
+##------------------------------------------
 
 
 
 
+    ## Take the right interval df (performance period and get timestamps for max and min
+    weather_max_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmax()
+    weather_min_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmin()
+
+    weather_max_day=weather_max_timestamp.date()
+    weather_max_day_interval_data=weather_daily_grouping.get_group(weather_max_day)
+    weather_average_day_profile_dataframe_pp[str(weather_max_timestamp)]=weather_max_day_interval_data[weather_max_day_interval_data.columns[1]].values
+
+    weather_min_day=weather_min_timestamp.date()
+    weather_min_day_interval_data=weather_daily_grouping.get_group(weather_min_day)
+    weather_average_day_profile_dataframe_pp[str(weather_min_timestamp)]=weather_min_day_interval_data[weather_min_day_interval_data.columns[1]].values
 
 
 

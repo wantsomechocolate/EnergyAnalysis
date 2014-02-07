@@ -10,8 +10,6 @@ print "Getting days to be excluded from calculations from file."
 exclude_days=wam.get_excluded_days()
 
 
-
-
 start_date_pp=datetime.datetime(2013,9,1,0,0)
 end_date_pp=datetime.datetime(2013,12,31,23,45)
 
@@ -36,10 +34,6 @@ print "Preparing data from for grouping by various time based criteria"
 ## Preparing data from for grouping by various time based criteria
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
 
-
-
-
-
 ## Group the data by calendar day via the groupby method.
 print "Grouping the data by calandar day."
 weather_daily_grouping=weather_interval_dataframe.groupby('Date')
@@ -54,55 +48,24 @@ weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.column
 print "Getting k 1d nearest neighbors in the average day dataframe."
 weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
 
-
-
-##-------------------------------------
-function call here!
-
-#### Now I'm interested only in performance period
-##print "Getting the performance period"
-##weather_interval_dataframe_pp=weather_interval_dataframe[start_date_pp:end_date_pp]
-##
-#### In one swoop, group by daytype and hour, get the averages for each group, then put back into df
-##print "Grouping by DayType and Hour, getting mean, put back in df."
-##weather_average_day_profile_dataframe_pp=weather_interval_dataframe_pp.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({'WetBulbTemp':np.mean})
-##
-#### Now group based on the new df
-##print "Group the new dataframe on daytype and seperating groups to be different columns in another dataframe."
-##weather_average_day_profile_groups_pp=weather_average_day_profile_dataframe_pp.groupby('DayType')
-##
-#### I know there will be two groups because of what the datetime to business day function does.
-##print "Putting each group into a new dataframe"
-##weather_average_wetbulb_weekday_pp=weather_average_day_profile_groups_pp.get_group('Weekday')['WetBulbTemp']
-##weather_average_wetbulb_weekend_pp=weather_average_day_profile_groups_pp.get_group('Weekend')['WetBulbTemp']
-##
-##print "Merging results into a single dataframe."
-##weather_average_day_profile_dataframe_pp=pd.DataFrame({'Weekday':weather_average_wetbulb_weekday_pp.values,'Weekend':weather_average_wetbulb_weekend_pp.values})
-##
-##print "Getting day with peak temp and day with lowest temp and adding to average day dataframe."
-#### Take the right interval df (performance period and get timestamps for max and min
-##weather_max_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmax()
-##weather_min_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmin()
-##
-##weather_max_day=weather_max_timestamp.date()
-##weather_max_day_interval_data=weather_daily_grouping.get_group(weather_max_day)
-##weather_average_day_profile_dataframe_pp[str(weather_max_timestamp)]=weather_max_day_interval_data[weather_max_day_interval_data.columns[1]].values
-##
-##weather_min_day=weather_min_timestamp.date()
-##weather_min_day_interval_data=weather_daily_grouping.get_group(weather_min_day)
-##weather_average_day_profile_dataframe_pp[str(weather_min_timestamp)]=weather_min_day_interval_data[weather_min_day_interval_data.columns[1]].values
+## This function takes a df of interval data (multiple readings per day)
+## and slices it down to the given dates and returns a df representing a single day
+## with the average weekday, average weekend, peak day, and min day
+weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
 print "That's all for now, bye."
 
+from pandas import ExcelWriter
 
-## How many final products do I have?
-##Interval
-##Monthly?
-##Daily
-##Average Daily
+out='test.xlsx'
 
+writer = ExcelWriter(out)
 
+weather_average_day_profile_dataframe_pp.to_excel(writer,'Weather Average Day')
+weather_daily_dataframe.to_excel(writer,'Weather Daily')
+
+writer.save()
 
 
 

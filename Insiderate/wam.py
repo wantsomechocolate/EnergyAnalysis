@@ -7,6 +7,7 @@ from openpyxl import load_workbook
 import wam as wam
 import wamo as wamo
 from dateutil import parser
+import pandas as pd
 
 
 def get_excluded_days():
@@ -178,19 +179,25 @@ def datetime2hour(datetime):
     return datetime.hour
 
 def datetime2bday(datetime):
-
     date=datetime.date()
+    
     if date in exclude_days: ## Exclude days is a global variable
         return 'Weekend'
-    else:
-        pass
-
+    
+    else: pass
+    
     day_of_week=datetime.isoweekday()
+    
     if day_of_week<=5:
         return 'Weekday'
+    
     else:
         return 'Weekend'
 
+
+
+## I didn't know how to pass a function with variables to the agg operator so
+## so I had to define it in the top level of my module :(
 exclude_days=get_excluded_days()
 def prepare_dataframe_for_grouping_by_time(df, sd, ed):
 
@@ -209,45 +216,47 @@ def prepare_dataframe_for_grouping_by_time(df, sd, ed):
     return df
 
 
+
 def average_daily_metrics(df, sd, ed, col_name):
 
     ## Now I'm interested only in performance period
     df=df[sd:ed]
 
     ## In one swoop, group by daytype and hour, get the averages for each group, then put back into df
-    df=df.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({col_name:np.mean})
+    df_ave_day=df.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({col_name:np.mean})
 
     ## Now group based on the new df
-    groups=df.groupby('DayType')
+    groups=df_ave_day.groupby('DayType')
 
     ## I know there will be two groups because of what the datetime to business day function does.
-    weekday=df.get_group('Weekday')[col_name]
-    weekend=df.get_group('Weekend')[col_name]
+    weekday=groups.get_group('Weekday')[col_name]
+    weekend=groups.get_group('Weekend')[col_name]
 
     ## Create new df with groups as columns
-    df=pd.DataFrame({'Weekday':weekday.values,'Weekend':weekend.values})
+    df_ave_day=pd.DataFrame({'Weekday':weekday.values,'Weekend':weekend.values})
 
+    ## Group by day so that I can use the max day as a key to get the data for the max day
+    group_by_day=df.groupby('Date')
 
+    ## Find the max temp and get the date of the corresponding datetime index
+    max_day=df[df.columns[1]].idxmax().date()
 
-##------------------------------------------
+    ## Get the data from that day
+    max_day_data=group_by_day.get_group(max_day)
 
+    ## Find the min temp and get the date of the corresponding datetime index
+    min_day=df[df.columns[1]].idxmin().date()
 
+    ## Get the data from that day
+    min_day_data=group_by_day.get_group(min_day)
 
+    ## Using the string for the date of the max day as the heading, add values to df
+    df_ave_day[str(max_day)]=max_day_data[max_day_data.columns[1]].values
 
-    ## Take the right interval df (performance period and get timestamps for max and min
-    weather_max_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmax()
-    weather_min_timestamp=weather_interval_dataframe_pp[weather_interval_dataframe_pp.columns[1]].idxmin()
+    ## Using the string for the date of the min day as the heading, add values to df
+    df_ave_day[str(min_day)]=min_day_data[min_day_data.columns[1]].values
 
-    weather_max_day=weather_max_timestamp.date()
-    weather_max_day_interval_data=weather_daily_grouping.get_group(weather_max_day)
-    weather_average_day_profile_dataframe_pp[str(weather_max_timestamp)]=weather_max_day_interval_data[weather_max_day_interval_data.columns[1]].values
-
-    weather_min_day=weather_min_timestamp.date()
-    weather_min_day_interval_data=weather_daily_grouping.get_group(weather_min_day)
-    weather_average_day_profile_dataframe_pp[str(weather_min_timestamp)]=weather_min_day_interval_data[weather_min_day_interval_data.columns[1]].values
-
-
-
+    return df_ave_day
 
 
 

@@ -50,14 +50,19 @@ wb = pd.ExcelFile(book_name)
 print "Reading in data from second sheet and creating a dataframe."
 weather_interval_dataframe=wb.parse(wb.sheet_names[1])
 
-## Set the date columns as the index - might have to hold off on this one, can't figure out
-## how to get it to work with rest of code.
-print "Setting the first column of the dataframe as the index of the dataframe."
-weather_interval_dataframe=weather_interval_dataframe.set_index(weather_interval_dataframe.columns[0])
 
-## Make the index back into a column so you have both to work with
-print "Creating a column based on the index, now both column and index operations can be performed."
-weather_interval_dataframe.insert(0,'DateTimeStamp',weather_interval_dataframe.index)
+
+#### Set the date columns as the index - might have to hold off on this one, can't figure out
+#### how to get it to work with rest of code.
+##print "Setting the first column of the dataframe as the index of the dataframe."
+##weather_interval_dataframe=weather_interval_dataframe.set_index(weather_interval_dataframe.columns[0])
+##
+#### Make the index back into a column so you have both to work with
+##print "Creating a column based on the index, now both column and index operations can be performed."
+##weather_interval_dataframe.insert(0,'DateTimeStamp',weather_interval_dataframe.index)
+
+weather_interval_dataframe=wam.duplicate_first_column_as_index(weather_interval_dataframe,'DateTimeStamp')
+
 
 ## Get slice that will be used for band analysis
 print "Getting a subset of the data for use in creating the performance band."
@@ -123,6 +128,11 @@ weather_average_day_profile_dataframe_pp[str(weather_min_timestamp)]=weather_min
 print "That's all for now, bye."
 
 
+## How many final products do I have?
+##Interval
+##Monthly?
+##Daily
+##Average Daily
 
 
 

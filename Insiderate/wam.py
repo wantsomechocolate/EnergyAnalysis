@@ -158,7 +158,15 @@ def get_daily_average_operating_profile(df):
 def get_n_similar_days(df, n):
     print "filler"
 
+def duplicate_first_column_as_index(df, column_name):
 
+    ## Set the first column as the index
+    df=df.set_index(df.columns[0])
+
+    ## Insert a new column of data at position 0 using the index as the data
+    df.insert(0,column_name,df.index)
+
+    return df
 
 
 

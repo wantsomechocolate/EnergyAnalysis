@@ -153,12 +153,6 @@ def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_d
 
 
 
-def get_daily_average_operating_profile(df):
-    print "filler"
-
-def get_n_similar_days(df, n):
-    print "filler"
-
 def duplicate_first_column_as_index(df, column_name):
 
     ## Set the first column as the index

@@ -54,20 +54,36 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
-print "That's all for now, bye."
+##print "That's all for now, bye."
+##
+##from pandas import ExcelWriter
+##
+##out='test.xlsx'
+##
+##writer = ExcelWriter(out)
+##
+##weather_average_day_profile_dataframe_pp.to_excel(writer,'Weather Average Day')
+##weather_daily_dataframe.to_excel(writer,'Weather Daily')
+##
+##writer.save()
 
-from pandas import ExcelWriter
 
-out='test.xlsx'
+##-------------- Cue Energy Analysis ----------------------
 
-writer = ExcelWriter(out)
+energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
-weather_average_day_profile_dataframe_pp.to_excel(writer,'Weather Average Day')
-weather_daily_dataframe.to_excel(writer,'Weather Daily')
+column_headings=list(energy_interval_dataframe_all.columns)
+dummy=column_headings.pop(0)
 
-writer.save()
+energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
+energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
 
+## The below is causing problems because I'm grouping by hour at some point when I should be grouping by 15 minute. :(
+df_ave_day_dict={}
+for item in column_headings:
+    energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
+    df_ave_day_dict[item]=energy_average_day_profile_dataframe_pp
 
 ##weather_interval_dataframe_for_dates=weather_interval_data_frame[datetime.datetime(2013,7,1,0,0):datetime.datetime(2013,7,,31,23,45)]
 ##weather_average_day_profile=weather_interval_data_frame.groupby(['DayType', 'Hour'], sort=False, as_index=False).apply(lambda x: list(x['WetBulbTemp']))

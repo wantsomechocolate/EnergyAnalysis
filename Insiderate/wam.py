@@ -170,7 +170,10 @@ def datetime2date(datetime):
     return datetime.date()
 
 def datetime2hour(datetime):
-    return datetime.hour
+    hour=datetime.hour
+    minute=datetime.minute
+    return hour*4+minute/15
+    #return datetime.hour
 
 def datetime2bday(datetime):
     date=datetime.date()

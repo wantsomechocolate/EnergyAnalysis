@@ -69,17 +69,21 @@ weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_inter
 
 
 ##-------------- Cue Energy Analysis ----------------------
-
+print "Reading in energy data"
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
+print "Get list of data streams"
 column_headings=list(energy_interval_dataframe_all.columns)
 dummy=column_headings.pop(0)
 
+print "Make timestamp index and first column"
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
+print "Prepare dataframe for grouping by time"
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
 
 ## The below is causing problems because I'm grouping by hour at some point when I should be grouping by 15 minute. :(
+print "Getting average day profile metrics"
 df_ave_day_dict={}
 for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)

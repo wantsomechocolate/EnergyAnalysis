@@ -222,6 +222,9 @@ def average_daily_metrics(df, sd, ed, col_name):
     ## In one swoop, group by daytype and hour, get the averages for each group, then put back into df
     df_ave_day=df.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({col_name:np.mean})
 
+
+    
+
     ## Now group based on the new df
     groups=df_ave_day.groupby('DayType')
 
@@ -235,23 +238,42 @@ def average_daily_metrics(df, sd, ed, col_name):
     ## Group by day so that I can use the max day as a key to get the data for the max day
     group_by_day=df.groupby('Date')
 
-    ## Find the max temp and get the date of the corresponding datetime index
-    max_day=df[df.columns[1]].idxmax().date()
 
-    ## Get the data from that day
+
+
+    mean_by_day=group_by_day[col_name].agg(np.mean)
+
+    max_day=mean_by_day.idxmax()
+    min_day=mean_by_day.idxmin()
+
+    
     max_day_data=group_by_day.get_group(max_day)
-
-    ## Find the min temp and get the date of the corresponding datetime index
-    min_day=df[df.columns[1]].idxmin().date()
-
-    ## Get the data from that day
     min_day_data=group_by_day.get_group(min_day)
 
+
+
+    ## Find the max temp and get the date of the corresponding datetime index
+    day_with_max=df[df.columns[1]].idxmax().date()
+
+    ## Get the data from that day
+    day_with_max_data=group_by_day.get_group(day_with_max)
+
+    ## Find the min temp and get the date of the corresponding datetime index
+    day_with_min=df[df.columns[1]].idxmin().date()
+
+    ## Get the data from that day
+    day_with_min_data=group_by_day.get_group(day_with_min)
+
     ## Using the string for the date of the max day as the heading, add values to df
-    df_ave_day[str(max_day)]=max_day_data[max_day_data.columns[1]].values
+    df_ave_day[str(day_with_max)+" Day with max"]=day_with_max_data[day_with_max_data.columns[1]].values
 
     ## Using the string for the date of the min day as the heading, add values to df
-    df_ave_day[str(min_day)]=min_day_data[min_day_data.columns[1]].values
+    df_ave_day[str(day_with_min)+" Day with min"]=day_with_min_data[day_with_min_data.columns[1]].values
+
+
+    df_ave_day[str(max_day)+" Max day"]=max_day_data[max_day_data.columns[1]].values
+
+    df_ave_day[str(min_day)+" Min day"]=min_day_data[min_day_data.columns[1]].values
 
     return df_ave_day
 

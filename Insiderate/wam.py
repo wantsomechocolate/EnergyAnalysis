@@ -143,10 +143,11 @@ def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_d
 
     for col in range(len(similar_days_by_DATE_zipped)):
         data_frame_def['Date '+str(col+1)]=similar_days_by_DATE_zipped[col]
-        data_frame_def['Mean '+str(col+1)]=ave_wbt_of_similar_days[col]
+        #data_frame_def['Mean '+str(col+1)]=ave_wbt_of_similar_days[col]
 
 ##    ## add to dataframe
-##    for col in range(len(ave_wbt_of_similar_days)):
+    for col in range(len(ave_wbt_of_similar_days)):
+        data_frame_def['Mean '+str(col+1)]=ave_wbt_of_similar_days[col]
         
 
     return data_frame_def
@@ -240,13 +241,12 @@ def average_daily_metrics(df, sd, ed, col_name):
 
 
 
-
+    ## Group by date to get the max and min day
     mean_by_day=group_by_day[col_name].agg(np.mean)
 
     max_day=mean_by_day.idxmax()
     min_day=mean_by_day.idxmin()
 
-    
     max_day_data=group_by_day.get_group(max_day)
     min_day_data=group_by_day.get_group(min_day)
 

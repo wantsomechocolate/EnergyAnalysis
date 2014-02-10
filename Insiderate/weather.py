@@ -89,6 +89,50 @@ for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
     df_ave_day_dict[item]=energy_average_day_profile_dataframe_pp
 
+
+
+## Get dataframe with two columns, Date and Usage
+
+
+#elec_df=pd.DataFrame({'elec':energy_interval_dataframe[energy_interval_dataframe.columns[1]].values,'Date':energy_interval_dataframe.Date.values})
+
+## First goal is a dataframe that has the datetime all usages and the date and that's it! Right?
+
+energy_interval_groups_by_date=energy_interval_dataframe.groupby('Date')
+
+list_of_list_of_series=[]
+for i in range(num_matches):
+    list_of_list_of_series.append([])
+
+band_info_df=pd.DataFrame()
+data_row=1
+
+for col in range(1,num_matches+1):
+    current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
+    for item in current_col:
+        current_group=energy_interval_groups_by_date.get_group(item)
+        current_series=current_group[current_group.columns[data_row]]
+
+        list_of_list_of_series[col-1].append(current_series)
+
+final_df=pd.DataFrame()
+for i in range(len(list_of_list_of_series)):
+    current_col=pd.concat(list_of_list_of_series[i])
+    final_df['Day '+str(i)]=current_col.values
+
+
+
+## first goal is a daily grouping where each group has n similar days in it
+
+
+
+
+## Take the weather_daily_dataframe
+## Take a grouping that groups the interval data by date
+
+
+
+
 ##weather_interval_dataframe_for_dates=weather_interval_data_frame[datetime.datetime(2013,7,1,0,0):datetime.datetime(2013,7,,31,23,45)]
 ##weather_average_day_profile=weather_interval_data_frame.groupby(['DayType', 'Hour'], sort=False, as_index=False).apply(lambda x: list(x['WetBulbTemp']))
 

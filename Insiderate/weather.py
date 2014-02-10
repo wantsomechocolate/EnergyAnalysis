@@ -121,6 +121,10 @@ for i in range(len(list_of_list_of_series)):
     final_df['Day '+str(i)]=current_col.values
 
 
+final_df['Mean']=final_df.mean(1)
+final_df['StDev']=final_df.std(1)
+final_df['Upper']=final_df.Mean+final_df.StDev
+final_df['Lower']=final_df.Mean-final_df.StDev
 
 ## first goal is a daily grouping where each group has n similar days in it
 

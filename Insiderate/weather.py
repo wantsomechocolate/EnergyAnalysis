@@ -91,21 +91,17 @@ for item in column_headings:
 
 
 
-## Get dataframe with two columns, Date and Usage
-
-
-#elec_df=pd.DataFrame({'elec':energy_interval_dataframe[energy_interval_dataframe.columns[1]].values,'Date':energy_interval_dataframe.Date.values})
-
-## First goal is a dataframe that has the datetime all usages and the date and that's it! Right?
+## 
 
 energy_interval_groups_by_date=energy_interval_dataframe.groupby('Date')
+
+data_row=1
 
 list_of_list_of_series=[]
 for i in range(num_matches):
     list_of_list_of_series.append([])
 
 band_info_df=pd.DataFrame()
-data_row=1
 
 for col in range(1,num_matches+1):
     current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
@@ -118,13 +114,59 @@ for col in range(1,num_matches+1):
 final_df=pd.DataFrame()
 for i in range(len(list_of_list_of_series)):
     current_col=pd.concat(list_of_list_of_series[i])
-    final_df['Day '+str(i)]=current_col.values
+    final_df['Day '+str(i+1)]=current_col.values
+
+final_df=final_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
+
+#new_df=pd.DataFrame({energy_interval_dataframe.columns[data_row]:energy_interval_dataframe[energy_interval_dataframe.columns[data_row]]})
+
+cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
+
+final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
+final_df[cur_data_head+'-Mean']=final_df.mean(1)
+final_df[cur_data_head+'-StDev']=final_df.std(1)
+final_df[cur_data_head+'-Upper']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
+final_df[cur_data_head+'-Lower']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
 
 
-final_df['Mean']=final_df.mean(1)
-final_df['StDev']=final_df.std(1)
-final_df['Upper']=final_df.Mean+final_df.StDev
-final_df['Lower']=final_df.Mean-final_df.StDev
+newest_df=final_df.ix[:,num_matches:]
+
+
+data_row=2
+
+list_of_list_of_series=[]
+for i in range(num_matches):
+    list_of_list_of_series.append([])
+
+band_info_df=pd.DataFrame()
+
+for col in range(1,num_matches+1):
+    current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
+    for item in current_col:
+        current_group=energy_interval_groups_by_date.get_group(item)
+        current_series=current_group[current_group.columns[data_row]]
+
+        list_of_list_of_series[col-1].append(current_series)
+
+final_df=pd.DataFrame()
+for i in range(len(list_of_list_of_series)):
+    current_col=pd.concat(list_of_list_of_series[i])
+    final_df['Day '+str(i+1)]=current_col.values
+
+final_df=final_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
+
+#new_df=pd.DataFrame({energy_interval_dataframe.columns[data_row]:energy_interval_dataframe[energy_interval_dataframe.columns[data_row]]})
+
+cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
+
+final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
+final_df[cur_data_head+'-Mean']=final_df.mean(1)
+final_df[cur_data_head+'-StDev']=final_df.std(1)
+final_df[cur_data_head+'-Upper']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
+final_df[cur_data_head+'-Lower']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
+
+
+newest_df_2=final_df.ix[:,num_matches:]
 
 ## first goal is a daily grouping where each group has n similar days in it
 

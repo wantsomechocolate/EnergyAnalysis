@@ -72,6 +72,9 @@ weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_inter
 print "Reading in energy data"
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
+print "Getting the number of data columns"
+num_data_cols=len(energy_interval_dataframe_all.columns)-1
+
 print "Get list of data streams"
 column_headings=list(energy_interval_dataframe_all.columns)
 dummy=column_headings.pop(0)
@@ -82,7 +85,6 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 print "Prepare dataframe for grouping by time"
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
 
-## The below is causing problems because I'm grouping by hour at some point when I should be grouping by 15 minute. :(
 print "Getting average day profile metrics"
 df_ave_day_dict={}
 for item in column_headings:
@@ -91,99 +93,84 @@ for item in column_headings:
 
 
 
-## 
+##------------------------ Join my Band --------------------------------
 
+print "Grouping interval energy data by date"
 energy_interval_groups_by_date=energy_interval_dataframe.groupby('Date')
 
-data_row=1
+## Stats are the band, data are the numbers used to calculate the stats
+energy_interval_band_stats_df_list=[]
+energy_interval_band_data_df_list=[]
 
-list_of_list_of_series=[]
-for i in range(num_matches):
-    list_of_list_of_series.append([])
+## for loop starting at index 1 instead of 0
+for data_col in range(1,num_data_cols+1):
 
-band_info_df=pd.DataFrame()
-
-for col in range(1,num_matches+1):
-    current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
-    for item in current_col:
-        current_group=energy_interval_groups_by_date.get_group(item)
-        current_series=current_group[current_group.columns[data_row]]
-
-        list_of_list_of_series[col-1].append(current_series)
-
-final_df=pd.DataFrame()
-for i in range(len(list_of_list_of_series)):
-    current_col=pd.concat(list_of_list_of_series[i])
-    final_df['Day '+str(i+1)]=current_col.values
-
-final_df=final_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
-
-#new_df=pd.DataFrame({energy_interval_dataframe.columns[data_row]:energy_interval_dataframe[energy_interval_dataframe.columns[data_row]]})
-
-cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
-
-final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
-final_df[cur_data_head+'-Mean']=final_df.mean(1)
-final_df[cur_data_head+'-StDev']=final_df.std(1)
+    ## Make and empty structure to store interval data by day to then later concatonate it all together
+    list_of_list_of_series=[]
+    for i in range(num_matches):
+        list_of_list_of_series.append([])
 
 
-#final_df[cur_data_head+'-Upper']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
-#final_df[cur_data_head+'-Lower']=final_df[final_df.columns[1]]-final_df[final_df.columns[2]]
+    band_info_df=pd.DataFrame()
 
-newest_df=final_df.ix[:,num_matches:]
+    ## num_matches is determined way in the beginning, it's the number of similar days
+    for col in range(1,num_matches+1):
+        ## Get a column out of the weather daily data frame
+        current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
+        ## for all the dates in the current column
+        for item in current_col:
+            ## Go to the interval data grouped by date and use the date as the index to get the data. 
+            current_group=energy_interval_groups_by_date.get_group(item)
+            ## Get only the data you want from the grouping (depends on data_col)
+            current_series=current_group[current_group.columns[data_col]]
+            ## Add that series to the list of lists!
+            list_of_list_of_series[col-1].append(current_series)
 
-newest_df[cur_data_head+'-Upper']=newest_df[newest_df.columns[1]]+newest_df[newest_df.columns[2]]
-newest_df[cur_data_head+'-Lower']=newest_df[newest_df.columns[1]]-newest_df[newest_df.columns[2]]
+    ## This iterates through the list of lists and uses concat to combine all the series in a
+    ## given list.
+    energy_interval_band_data_df=pd.DataFrame()
+    for i in range(len(list_of_list_of_series)):
+        current_col=pd.concat(list_of_list_of_series[i])
+        energy_interval_band_data_df['Day '+str(i+1)]=current_col.values
 
+    ## Because the analysis was sort of taken out of dataframe lane, the index went missing
+    ## Add it back in here
+    energy_interval_band_data_df=energy_interval_band_data_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
 
-data_row=2
+    ## Copy the data frame that consists of the datetime index and the energy data for the similar days
+    energy_interval_band_stats_df=energy_interval_band_data_df.copy(deep=True)
 
-list_of_list_of_series=[]
-for i in range(num_matches):
-    list_of_list_of_series.append([])
+    ## Add the band data to a list, this will be joined by other lists of there is more than one data stream
+    ## I.E elec and steam. I might make this a dictionary at some point and
+    ## print this dfs to their own sheets because they won't be used in any formulas in the supplemental
+    ## spreadsheet but they would be useful to look at. 
+    energy_interval_band_data_df_list.append(energy_interval_band_data_df)
 
-band_info_df=pd.DataFrame()
-
-for col in range(1,num_matches+1):
-    current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
-    for item in current_col:
-        current_group=energy_interval_groups_by_date.get_group(item)
-        current_series=current_group[current_group.columns[data_row]]
-
-        list_of_list_of_series[col-1].append(current_series)
-
-final_df=pd.DataFrame()
-for i in range(len(list_of_list_of_series)):
-    current_col=pd.concat(list_of_list_of_series[i])
-    final_df['Day '+str(i+1)]=current_col.values
-
-final_df=final_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
-
-#new_df=pd.DataFrame({energy_interval_dataframe.columns[data_row]:energy_interval_dataframe[energy_interval_dataframe.columns[data_row]]})
-
-cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
-
-final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
-final_df[cur_data_head+'-Mean']=final_df.mean(1)
-final_df[cur_data_head+'-StDev']=final_df.std(1)
-##final_df[cur_data_head+'-Upper']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
-##final_df[cur_data_head+'-Lower']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
+    ## Get a shortened data heading, This could cause problems if two datasreams
+    ## have the same first four letters in there column heading
+    data_heading=str(energy_interval_dataframe.columns[data_col][:4])
 
 
-newest_df2=final_df.ix[:,num_matches:]
-
-newest_df2[cur_data_head+'-Upper']=newest_df2[newest_df2.columns[1]]+newest_df2[newest_df2.columns[2]]
-newest_df2[cur_data_head+'-Lower']=newest_df2[newest_df2.columns[1]]-newest_df2[newest_df2.columns[2]]
-
-combine_df=newest_df.join([newest_df2], how='outer')
-
-## first goal is a daily grouping where each group has n similar days in it
+    energy_interval_band_stats_df[data_heading]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]].values
+    mean=energy_interval_band_stats_df.mean(1)
+    standard_dev=energy_interval_band_stats_df.std(1)
+    
+    energy_interval_band_stats_df[data_heading+'-Mean']=mean
+    energy_interval_band_stats_df[data_heading+'-StDev']=standard_dev
 
 
+    energy_interval_band_stats_df=energy_interval_band_stats_df.ix[:,num_matches:]
+
+    energy_interval_band_stats_df[data_heading+'-Upper']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]+energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
+    energy_interval_band_stats_df[data_heading+'-Lower']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]-energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
+
+    energy_interval_band_stats_df_list.append(energy_interval_band_stats_df)
 
 
-## Take the weather_daily_dataframe
-## Take a grouping that groups the interval data by date
+if len(energy_interval_band_stats_df_list)==1:
+    energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0]
+else:  
+    energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0].join(energy_interval_band_stats_df_list[1:], how='outer')
 
 
 

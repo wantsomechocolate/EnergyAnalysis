@@ -125,11 +125,15 @@ cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
 final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
 final_df[cur_data_head+'-Mean']=final_df.mean(1)
 final_df[cur_data_head+'-StDev']=final_df.std(1)
-final_df[cur_data_head+'-Upper']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
-final_df[cur_data_head+'-Lower']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
 
+
+#final_df[cur_data_head+'-Upper']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
+#final_df[cur_data_head+'-Lower']=final_df[final_df.columns[1]]-final_df[final_df.columns[2]]
 
 newest_df=final_df.ix[:,num_matches:]
+
+newest_df[cur_data_head+'-Upper']=newest_df[newest_df.columns[1]]+newest_df[newest_df.columns[2]]
+newest_df[cur_data_head+'-Lower']=newest_df[newest_df.columns[1]]-newest_df[newest_df.columns[2]]
 
 
 data_row=2
@@ -162,11 +166,16 @@ cur_data_head=str(energy_interval_dataframe.columns[data_row][:4])
 final_df[cur_data_head]=energy_interval_dataframe[energy_interval_dataframe.columns[data_row]].values
 final_df[cur_data_head+'-Mean']=final_df.mean(1)
 final_df[cur_data_head+'-StDev']=final_df.std(1)
-final_df[cur_data_head+'-Upper']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
-final_df[cur_data_head+'-Lower']=final_df[final_df.columns[0]]+final_df[final_df.columns[1]]
+##final_df[cur_data_head+'-Upper']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
+##final_df[cur_data_head+'-Lower']=final_df[final_df.columns[1]]+final_df[final_df.columns[2]]
 
 
-newest_df_2=final_df.ix[:,num_matches:]
+newest_df2=final_df.ix[:,num_matches:]
+
+newest_df2[cur_data_head+'-Upper']=newest_df2[newest_df2.columns[1]]+newest_df2[newest_df2.columns[2]]
+newest_df2[cur_data_head+'-Lower']=newest_df2[newest_df2.columns[1]]-newest_df2[newest_df2.columns[2]]
+
+combine_df=newest_df.join([newest_df2], how='outer')
 
 ## first goal is a daily grouping where each group has n similar days in it
 

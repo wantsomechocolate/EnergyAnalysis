@@ -26,6 +26,11 @@ def get_excluded_days():
     return exclude_days
 
 
+
+
+
+
+
 def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_days_def):
 
     ## For every number in this list, I need to find the n closest numbers from the same list
@@ -154,6 +159,7 @@ def add_k_1d_nearest_neighbors_to_dataframe(data_frame_def,n_count_def,exclude_d
 
 
 
+
 def duplicate_first_column_as_index(df, column_name):
 
     ## Set the first column as the index
@@ -214,17 +220,19 @@ def prepare_dataframe_for_grouping_by_time(df, sd, ed):
     return df
 
 
+def prepare_df_indexed_by_time_for_grouping_by_day(df):
+    print "filler"
+
 
 def average_daily_metrics(df, sd, ed, col_name):
 
     ## Now I'm interested only in performance period
     df=df[sd:ed]
 
+    identifier=col_name[:4]
+
     ## In one swoop, group by daytype and hour, get the averages for each group, then put back into df
     df_ave_day=df.groupby(['DayType', 'Hour'], sort=False, as_index=False).agg({col_name:np.mean})
-
-
-    
 
     ## Now group based on the new df
     groups=df_ave_day.groupby('DayType')
@@ -234,7 +242,7 @@ def average_daily_metrics(df, sd, ed, col_name):
     weekend=groups.get_group('Weekend')[col_name]
 
     ## Create new df with groups as columns
-    df_ave_day=pd.DataFrame({'Weekday':weekday.values,'Weekend':weekend.values})
+    df_ave_day=pd.DataFrame({identifier+'-Weekday':weekday.values,identifier+'-Weekend':weekend.values})
 
     ## Group by day so that I can use the max day as a key to get the data for the max day
     group_by_day=df.groupby('Date')
@@ -265,15 +273,15 @@ def average_daily_metrics(df, sd, ed, col_name):
     day_with_min_data=group_by_day.get_group(day_with_min)
 
     ## Using the string for the date of the max day as the heading, add values to df
-    df_ave_day[str(day_with_max)+" Day with max"]=day_with_max_data[day_with_max_data.columns[1]].values
+    df_ave_day[identifier+"-"+str(day_with_max)+"-DayWithMax"]=day_with_max_data[day_with_max_data.columns[1]].values
 
     ## Using the string for the date of the min day as the heading, add values to df
-    df_ave_day[str(day_with_min)+" Day with min"]=day_with_min_data[day_with_min_data.columns[1]].values
+    df_ave_day[identifier+"-"+str(day_with_min)+"-DayWithMin"]=day_with_min_data[day_with_min_data.columns[1]].values
 
 
-    df_ave_day[str(max_day)+" Max day"]=max_day_data[max_day_data.columns[1]].values
+    df_ave_day[identifier+"-"+str(max_day)+"-MaxDay"]=max_day_data[max_day_data.columns[1]].values
 
-    df_ave_day[str(min_day)+" Min day"]=min_day_data[min_day_data.columns[1]].values
+    df_ave_day[identifier+"-"+str(min_day)+"-MinDay"]=min_day_data[min_day_data.columns[1]].values
 
     return df_ave_day
 
@@ -292,81 +300,81 @@ def average_daily_metrics(df, sd, ed, col_name):
 
 
 
-## This function takes a list of lists and another list of lists and groups the first list based
-## on the indices in the second one?
-def use_list_of_list_of_indices_to_group_a_list_of_lists(main_list_def,list_of_list_indices_def):
+#### This function takes a list of lists and another list of lists and groups the first list based
+#### on the indices in the second one?
+##def use_list_of_list_of_indices_to_group_a_list_of_lists(main_list_def,list_of_list_indices_def):
+##
+##    main_list_with_criteria_def=[]
+##
+##    ## for item in sim days by day (each item will be a list of ints corresponding to list indices)
+##    for i in range(len(list_of_list_indices_def)):
+##
+##        ## an interim variable to hold a single day?
+##        interim_list_def=[]
+##
+##        ## for each list index corresponding to day of year
+##        for j in range(len(list_of_list_indices_def[i])):
+##
+##            ## Go to list with the data you want and collect it
+##            interim_list_def.append(main_list_def[list_of_list_indices_def[i][j]])
+##
+##        ## put all the days usages collected into the final list
+##        main_list_with_criteria_def.append(interim_list_def)
+##
+##        ## the result of this is a list of 366 days, each day has N similar days in it, each similar day has 96 values. 
+##
+##    return main_list_with_criteria_def
 
-    main_list_with_criteria_def=[]
+##def zip_all_items_of_a_list(list_to_zip_def):
+##    zipped_list_def=[]
+##    for item in list_to_zip_def:
+##        zipped_list_def.append(zip(*item))
+##
+##    return zipped_list_def
 
-    ## for item in sim days by day (each item will be a list of ints corresponding to list indices)
-    for i in range(len(list_of_list_indices_def)):
-
-        ## an interim variable to hold a single day?
-        interim_list_def=[]
-
-        ## for each list index corresponding to day of year
-        for j in range(len(list_of_list_indices_def[i])):
-
-            ## Go to list with the data you want and collect it
-            interim_list_def.append(main_list_def[list_of_list_indices_def[i][j]])
-
-        ## put all the days usages collected into the final list
-        main_list_with_criteria_def.append(interim_list_def)
-
-        ## the result of this is a list of 366 days, each day has N similar days in it, each similar day has 96 values. 
-
-    return main_list_with_criteria_def
-
-def zip_all_items_of_a_list(list_to_zip_def):
-    zipped_list_def=[]
-    for item in list_to_zip_def:
-        zipped_list_def.append(zip(*item))
-
-    return zipped_list_def
-
-def get_ave_std_of_list_of_list_of_list(list_to_analyze_def):
-
-    list_average_def=[]
-    list_std_def=[]
-    list_average_plus_stdev_def=[]
-    list_average_minus_stdev_def=[]
-
-    for list_of_list_def in list_to_analyze_def:
-        inter_list_ave_def=[]
-        inter_list_std_def=[]
-        inter_list_stdup_def=[]
-        inter_list_stdlo_def=[]
-        for list_ in list_of_list_def:
-
-            inter_def=np.array(list_)
-
-            
-            inter_def_new=[]
-            for item in inter_def:
-                try:
-                    inter_def_new.append(float(item))
-                except:
-                    pass
-            inter_def=np.array(inter_def_new)
-
-            
-            inter_list_ave_def.append(inter_def.mean())
-            inter_list_std_def.append(inter_def.std())
-            inter_list_stdup_def.append(inter_def.mean()+inter_def.std())
-            inter_list_stdlo_def.append(inter_def.mean()-inter_def.std())
-
-
-                
-
-                
-        list_average_def.append(inter_list_ave_def)
-        list_std_def.append(inter_list_std_def)
-        list_average_plus_stdev_def.append(inter_list_stdup_def)
-        list_average_minus_stdev_def.append(inter_list_stdlo_def)
-
-    return_list_def=[list_average_def,list_average_plus_stdev_def,list_average_minus_stdev_def,list_std_def]
-
-    return return_list_def
+##def get_ave_std_of_list_of_list_of_list(list_to_analyze_def):
+##
+##    list_average_def=[]
+##    list_std_def=[]
+##    list_average_plus_stdev_def=[]
+##    list_average_minus_stdev_def=[]
+##
+##    for list_of_list_def in list_to_analyze_def:
+##        inter_list_ave_def=[]
+##        inter_list_std_def=[]
+##        inter_list_stdup_def=[]
+##        inter_list_stdlo_def=[]
+##        for list_ in list_of_list_def:
+##
+##            inter_def=np.array(list_)
+##
+##            
+##            inter_def_new=[]
+##            for item in inter_def:
+##                try:
+##                    inter_def_new.append(float(item))
+##                except:
+##                    pass
+##            inter_def=np.array(inter_def_new)
+##
+##            
+##            inter_list_ave_def.append(inter_def.mean())
+##            inter_list_std_def.append(inter_def.std())
+##            inter_list_stdup_def.append(inter_def.mean()+inter_def.std())
+##            inter_list_stdlo_def.append(inter_def.mean()-inter_def.std())
+##
+##
+##                
+##
+##                
+##        list_average_def.append(inter_list_ave_def)
+##        list_std_def.append(inter_list_std_def)
+##        list_average_plus_stdev_def.append(inter_list_stdup_def)
+##        list_average_minus_stdev_def.append(inter_list_stdlo_def)
+##
+##    return_list_def=[list_average_def,list_average_plus_stdev_def,list_average_minus_stdev_def,list_std_def]
+##
+##    return return_list_def
 
 def get_ave_of_k_min_values(list_to_take_mins_from_all_def,num_of_min_values_def,index_start_def, index_end_def):
 
@@ -407,137 +415,137 @@ def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_de
 
     return baseline_by_day_def
 
-def get_start_time_each_day(interval_time_by_day_def,interval_usage_by_day_def, baseline_by_day_def, percent_above_baseline_def, threshold_def):
-
-    ## for every day
-    start_time_each_day_def=[]
-    
-    for i in range(len(interval_usage_by_day_def)):
-
-        found_start_time_def="No"
-        start_time_def="default value"
-        count=0
-
-        ## for every 15 minute period
-
-        if "Not enough min values" in baseline_by_day_def[i]:
-            start_time_each_day_def.append("Not enough min values")
-        else:
-        
-            for j in range(len(interval_usage_by_day_def[i])):
-                
-
-                ##if the usage during the 15 minutes is greater than a percentage more than the baseline
-                if interval_usage_by_day_def[i][j]>baseline_by_day_def[i][j]*(1+percent_above_baseline_def):
-                    ## increase count
-                    count=count+1
-                else:
-                    ## otherwise reset count
-                    count=0
-
-                ## at this point, count could be from 0 to 96 (every value higher than baseline)
-
-                ## if at any point it becomes greater than thresh and it hasn't before today
-                if count>=threshold_def and found_start_time_def=="No":
-                    ## say that the start time occured when the increase started
-                    start_time_def=interval_time_by_day_def[i][j-threshold_def]
-
-                    ## and say that a start time was found for the day
-                    found_start_time_def="Yes"
-
-            if found_start_time_def=="Yes":
-                if start_time_def.hour==0:
-                    start_time_each_day_def.append("err")
-                else:
-                    start_time_each_day_def.append(start_time_def)
-            else:
-                start_time_each_day_def.append("N/A")
-
-
-    return start_time_each_day_def
-
-
-def get_end_time_each_day(interval_time_by_day_def, interval_usage_by_day_def, baseline_by_day_def, start_time_each_day_def, percent_above_baseline_def, thresh_end_def):
-
-    end_time_each_day_def=[]
-    
-    start_time_each_day_copy=list(start_time_each_day_def)
-
-    ## for every day
-    for i in range(len(interval_usage_by_day_def)):
-
-        ## Refresh some vars
-        found_end_time_def="No"
-        end_time_def="default val"
-        count=0
-
-        if "Not enough min values" in baseline_by_day_def[i]:
-            end_time_each_day_def.append("Not enough min values")
-        else:
+##def get_start_time_each_day(interval_time_by_day_def,interval_usage_by_day_def, baseline_by_day_def, percent_above_baseline_def, threshold_def):
+##
+##    ## for every day
+##    start_time_each_day_def=[]
+##    
+##    for i in range(len(interval_usage_by_day_def)):
+##
+##        found_start_time_def="No"
+##        start_time_def="default value"
+##        count=0
+##
+##        ## for every 15 minute period
+##
+##        if "Not enough min values" in baseline_by_day_def[i]:
+##            start_time_each_day_def.append("Not enough min values")
+##        else:
+##        
+##            for j in range(len(interval_usage_by_day_def[i])):
+##                
+##
+##                ##if the usage during the 15 minutes is greater than a percentage more than the baseline
+##                if interval_usage_by_day_def[i][j]>baseline_by_day_def[i][j]*(1+percent_above_baseline_def):
+##                    ## increase count
+##                    count=count+1
+##                else:
+##                    ## otherwise reset count
+##                    count=0
+##
+##                ## at this point, count could be from 0 to 96 (every value higher than baseline)
+##
+##                ## if at any point it becomes greater than thresh and it hasn't before today
+##                if count>=threshold_def and found_start_time_def=="No":
+##                    ## say that the start time occured when the increase started
+##                    start_time_def=interval_time_by_day_def[i][j-threshold_def]
+##
+##                    ## and say that a start time was found for the day
+##                    found_start_time_def="Yes"
+##
+##            if found_start_time_def=="Yes":
+##                if start_time_def.hour==0:
+##                    start_time_each_day_def.append("err")
+##                else:
+##                    start_time_each_day_def.append(start_time_def)
+##            else:
+##                start_time_each_day_def.append("N/A")
+##
+##
+##    return start_time_each_day_def
 
 
-            ## for every 15 minute period
-            for j in range(len(interval_usage_by_day_def[i])):
-
-
-                try:
-                    test=start_time_each_day_copy[i].hour
-                except:
-                    start_time_each_day_copy[i]=interval_time_by_day_def[i][40]
-
-                ## If the 15 minute period in question is not even passed the start time
-                if interval_time_by_day_def[i][j]<=start_time_each_day_copy[i]:
-
-                    ## Then don't do anything. 
-                    pass
-
-                ## Otherwise, begin/continue the analysis. 
-                else:
-                
-                    ##if the usage during the 15 minutes is less than a percentage more than the baseline
-                    if interval_usage_by_day_def[i][j]<baseline_by_day_def[i][j]*(1+percent_above_baseline_def):
-                        ## increase count
-                        count=count+1
-                    else:
-                        ## otherwise reset count
-                        count=0
-
-                    ## at this point, count could be from 0 to 96 minus the number of points that fell before the start time
-
-                    ## if at any point it becomes greater than or equal to thresh and it hasn't before today
-                    if count>=thresh_end_def and found_end_time_def=="No":
-                        
-                        ## say that the end time occured when thresh was met
-                        end_time_def=interval_time_by_day_def[i][j-thresh_end_def]
-
-                        ## and say that an end time was found for the day
-                        found_end_time_def="Yes"
-
-            if found_end_time_def=="Yes":
-        ##            if end_time.hour==0:
-        ##                end_time_each_day.append("err")
-        ##            else:
-                end_time_each_day_def.append(end_time_def)
-            else:
-                ## the case that the program gets here on the last element of the array being indexed by i
-                ## needs to be coded for. 
-                ## If it fails it most likely means that the end time occurs the next day - at least for the data set that I'm using.
-
-                try:
-
-                    for m in range(len(interval_usage_by_day_def[i+1])): #next day
-                        if found_end_time_def=="No":
-                            if interval_usage_by_day_def[i+1][m]<baseline_by_day_def[i+1][m]*(1+percent_above_baseline_def):
-                                found_end_time_def="Yes"
-                                end_time_def=interval_time_by_day_def[i+1][m]
-
-                ## Last Day no Shutdown
-                except:
-                    end_time_def="LDNSD"
-                    
-                end_time_each_day_def.append(end_time_def)
-
-    return end_time_each_day_def
+##def get_end_time_each_day(interval_time_by_day_def, interval_usage_by_day_def, baseline_by_day_def, start_time_each_day_def, percent_above_baseline_def, thresh_end_def):
+##
+##    end_time_each_day_def=[]
+##    
+##    start_time_each_day_copy=list(start_time_each_day_def)
+##
+##    ## for every day
+##    for i in range(len(interval_usage_by_day_def)):
+##
+##        ## Refresh some vars
+##        found_end_time_def="No"
+##        end_time_def="default val"
+##        count=0
+##
+##        if "Not enough min values" in baseline_by_day_def[i]:
+##            end_time_each_day_def.append("Not enough min values")
+##        else:
+##
+##
+##            ## for every 15 minute period
+##            for j in range(len(interval_usage_by_day_def[i])):
+##
+##
+##                try:
+##                    test=start_time_each_day_copy[i].hour
+##                except:
+##                    start_time_each_day_copy[i]=interval_time_by_day_def[i][40]
+##
+##                ## If the 15 minute period in question is not even passed the start time
+##                if interval_time_by_day_def[i][j]<=start_time_each_day_copy[i]:
+##
+##                    ## Then don't do anything. 
+##                    pass
+##
+##                ## Otherwise, begin/continue the analysis. 
+##                else:
+##                
+##                    ##if the usage during the 15 minutes is less than a percentage more than the baseline
+##                    if interval_usage_by_day_def[i][j]<baseline_by_day_def[i][j]*(1+percent_above_baseline_def):
+##                        ## increase count
+##                        count=count+1
+##                    else:
+##                        ## otherwise reset count
+##                        count=0
+##
+##                    ## at this point, count could be from 0 to 96 minus the number of points that fell before the start time
+##
+##                    ## if at any point it becomes greater than or equal to thresh and it hasn't before today
+##                    if count>=thresh_end_def and found_end_time_def=="No":
+##                        
+##                        ## say that the end time occured when thresh was met
+##                        end_time_def=interval_time_by_day_def[i][j-thresh_end_def]
+##
+##                        ## and say that an end time was found for the day
+##                        found_end_time_def="Yes"
+##
+##            if found_end_time_def=="Yes":
+##        ##            if end_time.hour==0:
+##        ##                end_time_each_day.append("err")
+##        ##            else:
+##                end_time_each_day_def.append(end_time_def)
+##            else:
+##                ## the case that the program gets here on the last element of the array being indexed by i
+##                ## needs to be coded for. 
+##                ## If it fails it most likely means that the end time occurs the next day - at least for the data set that I'm using.
+##
+##                try:
+##
+##                    for m in range(len(interval_usage_by_day_def[i+1])): #next day
+##                        if found_end_time_def=="No":
+##                            if interval_usage_by_day_def[i+1][m]<baseline_by_day_def[i+1][m]*(1+percent_above_baseline_def):
+##                                found_end_time_def="Yes"
+##                                end_time_def=interval_time_by_day_def[i+1][m]
+##
+##                ## Last Day no Shutdown
+##                except:
+##                    end_time_def="LDNSD"
+##                    
+##                end_time_each_day_def.append(end_time_def)
+##
+##    return end_time_each_day_def
 
 
 def get_date_range_from_user(debug_mode):
@@ -572,61 +580,61 @@ def get_date_range_from_user(debug_mode):
         return [datetime.datetime(2013,7,1), datetime.datetime(2013,9,30)]
 
 
-def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):
-    
-    start_index_def=date_list_def.index(date_range_def[0])
-    end_index_def=date_list_def.index(date_range_def[1])
-
-    #interval_by_day_in_range_def=interval_by_day_def[start_index_def:end_index_def]
-
-
-    date_list_wkday_def=[]
-    date_list_wkend_def=[]
-    interval_wkday_def=[]
-    interval_wkend_def=[]
-
-    max_value_reached_def=0
-
-    #print start_index_def
-    #print end_index_def
-    
-    for i in range(start_index_def, end_index_def):
-        
-        if date_list_def[i].weekday()<=4:
-            date_list_wkday_def.append(date_list_def[i])
-            interval_wkday_def.append(interval_usage_by_day_def[i])
-        else:
-            date_list_wkend_def.append(date_list_def[i])
-            interval_wkend_def.append(interval_usage_by_day_def[i])
-
-
-        max_val_by_day_def=max(interval_usage_by_day_def[i])
-        if max_val_by_day_def>max_value_reached_def:
-            max_value_reached_def=max_val_by_day_def
-            peak_day_usage_def=interval_usage_by_day_def[i]
-            peak_date_def=date_list_def[i]
-        else:
-            pass
-        
-
-
-    interval_wkday_zipped_def=zip(*interval_wkday_def)
-    interval_wkend_zipped_def=zip(*interval_wkend_def)
-
-
-    wkday_ave_def=[]
-    for item in interval_wkday_zipped_def:
-        item_np_def=np.array(item)
-        item_ave_def=item_np_def.mean()
-        wkday_ave_def.append(item_ave_def)
-
-    wkend_ave_def=[]
-    for item in interval_wkend_zipped_def:
-        item_np_def=np.array(item)
-        item_ave_def=item_np_def.mean()
-        wkend_ave_def.append(item_ave_def)
-
-    return [wkday_ave_def,wkend_ave_def,peak_day_usage_def,peak_date_def]
+##def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):
+##    
+##    start_index_def=date_list_def.index(date_range_def[0])
+##    end_index_def=date_list_def.index(date_range_def[1])
+##
+##    #interval_by_day_in_range_def=interval_by_day_def[start_index_def:end_index_def]
+##
+##
+##    date_list_wkday_def=[]
+##    date_list_wkend_def=[]
+##    interval_wkday_def=[]
+##    interval_wkend_def=[]
+##
+##    max_value_reached_def=0
+##
+##    #print start_index_def
+##    #print end_index_def
+##    
+##    for i in range(start_index_def, end_index_def):
+##        
+##        if date_list_def[i].weekday()<=4:
+##            date_list_wkday_def.append(date_list_def[i])
+##            interval_wkday_def.append(interval_usage_by_day_def[i])
+##        else:
+##            date_list_wkend_def.append(date_list_def[i])
+##            interval_wkend_def.append(interval_usage_by_day_def[i])
+##
+##
+##        max_val_by_day_def=max(interval_usage_by_day_def[i])
+##        if max_val_by_day_def>max_value_reached_def:
+##            max_value_reached_def=max_val_by_day_def
+##            peak_day_usage_def=interval_usage_by_day_def[i]
+##            peak_date_def=date_list_def[i]
+##        else:
+##            pass
+##        
+##
+##
+##    interval_wkday_zipped_def=zip(*interval_wkday_def)
+##    interval_wkend_zipped_def=zip(*interval_wkend_def)
+##
+##
+##    wkday_ave_def=[]
+##    for item in interval_wkday_zipped_def:
+##        item_np_def=np.array(item)
+##        item_ave_def=item_np_def.mean()
+##        wkday_ave_def.append(item_ave_def)
+##
+##    wkend_ave_def=[]
+##    for item in interval_wkend_zipped_def:
+##        item_np_def=np.array(item)
+##        item_ave_def=item_np_def.mean()
+##        wkend_ave_def.append(item_ave_def)
+##
+##    return [wkday_ave_def,wkend_ave_def,peak_day_usage_def,peak_date_def]
 
 
 def get_bucket_date_range_from_user(end_date=""):

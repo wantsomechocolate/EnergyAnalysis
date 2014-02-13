@@ -54,6 +54,10 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
+
+
+
+
 ##print "That's all for now, bye."
 ##
 ##from pandas import ExcelWriter
@@ -86,10 +90,24 @@ print "Prepare dataframe for grouping by time"
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
 
 print "Getting average day profile metrics"
-df_ave_day_dict={}
+##df_ave_day_dict={}
+##for item in column_headings:
+##    energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
+##    df_ave_day_dict[item]=energy_average_day_profile_dataframe_pp
+
+## Getting this right involves making the column names unique for each set. Should be easy
+## Just use the first couple chars of item as column heading. 
+df_ave_day_list=[]
 for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
-    df_ave_day_dict[item]=energy_average_day_profile_dataframe_pp
+    df_ave_day_list.append(energy_average_day_profile_dataframe_pp)
+
+if len(df_ave_day_list)==1:
+    ave_day_stats_pp=df_ave_day_list[0]
+else:  
+    ave_day_stats_pp=df_ave_day_list[0].join(df_ave_day_list[1:], how='outer')
+
+
 
 
 
@@ -137,8 +155,12 @@ for data_col in range(1,num_data_cols+1):
     ## Add it back in here
     energy_interval_band_data_df=energy_interval_band_data_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
 
+
+
     ## Copy the data frame that consists of the datetime index and the energy data for the similar days
     energy_interval_band_stats_df=energy_interval_band_data_df.copy(deep=True)
+
+
 
     ## Add the band data to a list, this will be joined by other lists of there is more than one data stream
     ## I.E elec and steam. I might make this a dictionary at some point and
@@ -174,9 +196,17 @@ else:
 
 
 
+#energy_band_stats_by_day_df=
+energy_interval_band_stats_df_all=df
+df.insert(0,'DateTimeStamp',df.index)
+df['Date']=df[df.columns[0]].apply(wam.datetime2date)
+## This automatically ignores the non number columns!
+energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
 
-##weather_interval_dataframe_for_dates=weather_interval_data_frame[datetime.datetime(2013,7,1,0,0):datetime.datetime(2013,7,,31,23,45)]
-##weather_average_day_profile=weather_interval_data_frame.groupby(['DayType', 'Hour'], sort=False, as_index=False).apply(lambda x: list(x['WetBulbTemp']))
+## Do the same thing for months
+## Do the same thing for weeks? Make a custom function that looks and the modulus of how many days you are
+## away from the first day? start at zero and then remove that group later?
+
 
 
 ## Test cases

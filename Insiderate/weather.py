@@ -3,6 +3,9 @@
 import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime
 
+output_book = pd.ExcelWriter('output.xlsx')
+
+
 book_name='DataInput2013.xlsx'
 num_matches=5
 
@@ -54,7 +57,7 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
-
+weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 
 
@@ -108,7 +111,7 @@ else:
     ave_day_stats_pp=df_ave_day_list[0].join(df_ave_day_list[1:], how='outer')
 
 
-
+ave_day_stats_pp.to_excel(output_book,"EnergyAveDay")
 
 
 ##------------------------ Join my Band --------------------------------
@@ -119,6 +122,7 @@ energy_interval_groups_by_date=energy_interval_dataframe.groupby('Date')
 ## Stats are the band, data are the numbers used to calculate the stats
 energy_interval_band_stats_df_list=[]
 energy_interval_band_data_df_list=[]
+energy_band_stats_by_day_df_list=[]
 
 ## for loop starting at index 1 instead of 0
 for data_col in range(1,num_data_cols+1):
@@ -151,18 +155,20 @@ for data_col in range(1,num_data_cols+1):
         current_col=pd.concat(list_of_list_of_series[i])
         energy_interval_band_data_df['Day '+str(i+1)]=current_col.values
 
-    ## Because the analysis was sort of taken out of dataframe lane, the index went missing
+    ## Because the analysis was sort of taken out of dataframe land, the index went missing
     ## Add it back in here
     energy_interval_band_data_df=energy_interval_band_data_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
+
+
+
+    
 
 
 
     ## Copy the data frame that consists of the datetime index and the energy data for the similar days
     energy_interval_band_stats_df=energy_interval_band_data_df.copy(deep=True)
 
-
-
-    ## Add the band data to a list, this will be joined by other lists of there is more than one data stream
+    ## Add the band data to a list, this will be joined by other lists if there is more than one data stream
     ## I.E elec and steam. I might make this a dictionary at some point and
     ## print this dfs to their own sheets because they won't be used in any formulas in the supplemental
     ## spreadsheet but they would be useful to look at. 
@@ -173,35 +179,83 @@ for data_col in range(1,num_data_cols+1):
     data_heading=str(energy_interval_dataframe.columns[data_col][:4])
 
 
-    energy_interval_band_stats_df[data_heading]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]].values
+    ## I wanted to print this data but maybe later
+    #energy_interval_band_data_df.to_excel(output_book,data_heading+"-SimDayData")
+
+
+    ## Get the mean of all values in either the stats df or the band df they are the same right now
     mean=energy_interval_band_stats_df.mean(1)
     standard_dev=energy_interval_band_stats_df.std(1)
-    
+    variance=standard_dev**2
+
+    ## Add data the actual interval data to the stats df
+    energy_interval_band_stats_df[data_heading]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]].values
+
+    ## Add the three metrics you just got
     energy_interval_band_stats_df[data_heading+'-Mean']=mean
     energy_interval_band_stats_df[data_heading+'-StDev']=standard_dev
+    energy_interval_band_stats_df[data_heading+'-Var']=variance
 
-
+    ## Reset the stats df so that it does not include the band data, that is already stored elsewhere.
     energy_interval_band_stats_df=energy_interval_band_stats_df.ix[:,num_matches:]
 
+
+
+
+## Above got the stats base on 15 minute data, below is to get the stats by day
+    
+    ## Make another copy of band stats?
+    df=energy_interval_band_stats_df.copy(deep=True)
+    ## Insert the index of the copy as the first column
+    df.insert(0,'DateTimeStamp',df.index)
+    ## Add  a column for the date
+    df['Date']=df[df.columns[0]].apply(wam.datetime2date)
+    ## Group by that column and then aggregate the groups by summation. 
+    energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
+
+
+    
+
+    ## This takes the sum of the variances and square roots it, which gives us the aggregate standard deviation
+    energy_band_stats_by_day_df[data_heading+'-VarRoot']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[-1]].apply(np.sqrt)
+
+    ## Take the var root and add to mean for upper
+    energy_band_stats_by_day_df[data_heading+'-Upper']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]+energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
+
+    ## Subtract from mean for lower
+    energy_band_stats_by_day_df[data_heading+'-Lower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
+    
+    ## Do the same thing for the interval data (but just use the standarad deviation
     energy_interval_band_stats_df[data_heading+'-Upper']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]+energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
     energy_interval_band_stats_df[data_heading+'-Lower']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]-energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
 
+    ## Add the interval df to the list to be concatonated later
     energy_interval_band_stats_df_list.append(energy_interval_band_stats_df)
 
+    ## Add the daily df to the list to be concatonated later
+    energy_band_stats_by_day_df_list.append(energy_band_stats_by_day_df)
 
+## the stats list has one item your are done
 if len(energy_interval_band_stats_df_list)==1:
     energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0]
 else:  
     energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0].join(energy_interval_band_stats_df_list[1:], how='outer')
 
 
+## If they have more than one item then use join and the 'outer' argument for the how parameter to join them by column into one big df
+if len(energy_band_stats_by_day_df_list)==1:
+    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df[0]
+else:  
+    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0].join(energy_band_stats_by_day_df_list[1:], how='outer')
 
-#energy_band_stats_by_day_df=
-energy_interval_band_stats_df_all=df
-df.insert(0,'DateTimeStamp',df.index)
-df['Date']=df[df.columns[0]].apply(wam.datetime2date)
-## This automatically ignores the non number columns!
-energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
+
+
+energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
+
+## This is useless without the bucket analysis, That is the next priority. After getting that, use the
+## plotting functionality to graph stuff, and then finally print stuff to excel
+## After that look into the monthly numbers. 
+
 
 ## Do the same thing for months
 ## Do the same thing for weeks? Make a custom function that looks and the modulus of how many days you are
@@ -224,3 +278,4 @@ energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
 ## Missing timestamps. 
 
 
+output_book.save()

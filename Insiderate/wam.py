@@ -198,7 +198,8 @@ def datetime2bday(datetime):
     else:
         return 'Weekend'
 
-
+##def datetime2week(datetime):
+##    date=datetime.dat
 
 ## I didn't know how to pass a function with variables to the agg operator so
 ## so I had to define it in the top level of my module :(

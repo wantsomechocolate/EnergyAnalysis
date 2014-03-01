@@ -1,4 +1,3 @@
-#step 1
 
 import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime
@@ -249,12 +248,84 @@ else:
     energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0].join(energy_band_stats_by_day_df_list[1:], how='outer')
 
 
-
 energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
 
 ## This is useless without the bucket analysis, That is the next priority. After getting that, use the
 ## plotting functionality to graph stuff, and then finally print stuff to excel
 ## After that look into the monthly numbers. 
+
+
+
+## Bucket analysis
+
+bucketed_usage_all_streams=[]
+
+for data_col in range(1,num_data_cols+1):
+
+## 1.) Find date range for most recent year and take slice from main thing.
+
+## Organize the interval data into a list of lists. Days of hours.
+    
+    new_df=pd.DataFrame()
+    new_df['Date']=energy_interval_dataframe['Date']
+    new_df[energy_interval_dataframe.columns[data_col]]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]]
+    groups=new_df.groupby('Date')
+    new_list=list(groups)
+    int_data_by_day=[]
+    for i in range(len(groups)):
+        int_data_by_day.append(list(new_list[i][1][energy_interval_dataframe.columns[data_col]]))
+
+
+    date_list=list(energy_interval_dataframe.groupby('Date').agg(np.sum).index)
+
+    end_date_bucket=end_date_pp.date()
+
+    bucket_date_range=wam.get_bucket_date_range_from_user(end_date=end_date_bucket)
+
+
+    try:
+        start_date_index=date_list.index(bucket_date_range[0])
+    except ValueError:
+        start_date_index=0
+
+    try:
+        end_date_index=date_list.index(bucket_date_range[1])
+    except:
+        end_date_index=-1
+        print "--Something went wrong getting the end date"
+        print "--Defaulting to the last date in list"
+
+
+
+    ## Instead of the open closed bs, as "What time does the building go from closed to open?"
+    ## and "What time does the building go from open to closed?"
+    bucket_open_closed_hours=wam.get_operating_hours_from_user()
+
+    ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
+    bucket_operating_hours_by_day=[]
+    for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
+        bucket_operating_hours_by_day.append(bucket_open_closed_hours)
+
+    bucketed_usage=wam.get_bucketed_usage(bucket_operating_hours_by_day, date_list, start_date_index, end_date_index, int_data_by_day)
+
+    bucketed_usage_all_streams.append(bucketed_usage)
+
+
+bucketed_usage_df=pd.DataFrame()
+bucketed_usage_df['Date']=bucketed_usage_all_streams[0][2]
+
+for i in range(len(bucketed_usage_all_streams)):
+    bucketed_usage_df[energy_interval_dataframe.columns[i+1][:4]+'-Occ']=bucketed_usage_all_streams[i][0]
+    bucketed_usage_df[energy_interval_dataframe.columns[i+1][:4]+'-Unocc']=bucketed_usage_all_streams[i][1]
+
+bucketed_usage_df=bucketed_usage_df.set_index('Date')
+
+
+bucketed_usage_df.to_excel(output_book,"Bucketed Usage")
+
+
+
+    
 
 
 ## Do the same thing for months

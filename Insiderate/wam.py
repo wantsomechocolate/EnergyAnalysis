@@ -1,13 +1,14 @@
 import datetime
-import os, time #wam
+import os, time
 import numpy as np
 from marbles import glass as chan
 from openpyxl import Workbook
 from openpyxl import load_workbook
 import wam as wam
-import wamo as wamo
 from dateutil import parser
 import pandas as pd
+import re
+
 
 
 def get_excluded_days():
@@ -21,13 +22,8 @@ def get_excluded_days():
     for item in contents:
         if len(item.split())>0:
             exclude_days.append(parser.parse(item.split()[0]).date())
-
     fh.close()
     return exclude_days
-
-
-
-
 
 
 
@@ -198,8 +194,7 @@ def datetime2bday(datetime):
     else:
         return 'Weekend'
 
-##def datetime2week(datetime):
-##    date=datetime.dat
+
 
 ## I didn't know how to pass a function with variables to the agg operator so
 ## so I had to define it in the top level of my module :(
@@ -207,7 +202,7 @@ exclude_days=get_excluded_days()
 def prepare_dataframe_for_grouping_by_time(df, sd, ed):
 
     ## Get slice that will be used for band analysis (1-3 years most likely)
-    df=df[sd:ed]
+    #df=df[sd:ed]
     
     ## From the datetime in column one, make a new column with only the date portion of each date time, for grouping
     df['Date']=df[df.columns[0]].apply(datetime2date)
@@ -218,17 +213,37 @@ def prepare_dataframe_for_grouping_by_time(df, sd, ed):
     ## Add a daytype that seperates days into Weekday and Holiday/Weekend
     df['DayType']=df[df.columns[0]].apply(datetime2bday)
 
+    ## get first time stamp in group that is the start date
+    group=df.groupby('Date')
+    
+    start_timestamp=min(group.get_group(sd).index)
+
+    end_timestamp=max(group.get_group(ed).index)
+
+    df=df[start_timestamp: end_timestamp]
+
     return df
+
 
 
 def prepare_df_indexed_by_time_for_grouping_by_day(df):
     print "filler"
 
 
+
 def average_daily_metrics(df, sd, ed, col_name):
 
+
+    group=df.groupby('Date')
+    start_timestamp=min(group.get_group(sd).index)
+    end_timestamp=max(group.get_group(ed).index)
+
+
+    df=df[start_timestamp: end_timestamp]
+
+
     ## Now I'm interested only in performance period
-    df=df[sd:ed]
+    #df=df[sd:ed]
 
     identifier=col_name[:4]
 
@@ -288,10 +303,244 @@ def average_daily_metrics(df, sd, ed, col_name):
 
 
 
+def get_ave_of_k_min_values(list_to_take_mins_from_all_def,num_of_min_values_def,index_start_def, index_end_def):
+
+    ## This is done in case you want to look at a beginning of the day baseline and not have crazy
+    ## end of the day stuff get in the way.
+    
+    list_to_take_mins_from_def=list_to_take_mins_from_all_def[index_start_def:index_end_def]
+
+    if len(list_to_take_mins_from_def)<num_of_min_values_def:
+        return np.average(list_to_take_mins_from_def)
+
+    else:
+        k_min_values_def=[]
+        list_to_take_mins_from_copy_def=list(list_to_take_mins_from_def)
+        for i in range(num_of_min_values_def):
+            min_value_def=min(list_to_take_mins_from_copy_def)
+            list_to_take_mins_from_copy_def.remove(min_value_def)
+            k_min_values_def.append(min_value_def)
+
+        try:
+            k_min_average_def=np.average(k_min_values_def)
+        except:
+            k_min_average_def="Not enough min values"
+
+        return k_min_average_def
+
+
+def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_def, end_index_def):
+    
+    baseline_by_day_def=[]
+    for i in range(len(list_of_usages_by_day_def)):
+        baseline_by_day_def.append([])
+
+    for i in range(len(list_of_usages_by_day_def)):
+        baseline_def=get_ave_of_k_min_values(list_of_usages_by_day_def[i],num_values_def, start_index_def, end_index_def)
+        for j in range(len(list_of_usages_by_day_def[i])):
+            baseline_by_day_def[i].append(baseline_def)
+
+    return baseline_by_day_def
 
 
 
+def get_date_range_from_user(debug_mode=False):
 
+    if debug_mode==False:
+        from dateutil import parser
+
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                start_date=raw_input("--Start Date - All common formats are fine, use full year: ")
+                sd_obj=parser.parse(start_date)
+                sd_obj=sd_obj.date()
+                got_to_end=True
+            except:
+                print "--Date format not recognized or date does not exist"
+
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                end_date=raw_input("--End Date - All common formats are fine, use full year: ")
+                ed_obj=parser.parse(end_date)
+                ed_obj=ed_obj.date()
+                if sd_obj<ed_obj:
+                    got_to_end=True
+                else:
+                    print "--What! enter the dates in order, fool!"
+            except:
+                print "--Date format not recognized or date does not exist"
+
+        return [sd_obj, ed_obj]
+
+    else:
+        return [datetime.datetime(2013,7,1), datetime.datetime(2013,9,30)]
+
+
+
+def get_bucket_date_range_from_user(end_date=""):
+    #bucket_end_date_text="6/30/2013"
+
+##    bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
+##    
+##    bucket_end_date=parser.parse(bucket_end_date_text)
+
+    if end_date=="":
+        got_to_end=False
+        while got_to_end==False:
+            try:
+                bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
+                if len(bucket_end_date_text)<=5:
+                    error="str"+5
+                else:
+                    bucket_end_date=parser.parse(bucket_end_date_text)
+                    got_to_end=True
+            except:
+                print "Date format not recognized or date does not exist"
+
+    else:
+        bucket_end_date=end_date
+
+            
+    while bucket_end_date.isoweekday()!=1:
+        bucket_end_date=bucket_end_date-datetime.timedelta(days=1)
+
+    bucket_start_date=bucket_end_date-datetime.timedelta(days=364)
+
+    return [bucket_start_date, bucket_end_date]
+
+
+
+def get_operating_hours_from_user(debug=False):
+
+    re_time_hh_mm='[012][0123456789]:[012345][1234567890]'
+
+    bucket_start_day_text="00:00"
+
+    bucket_end_day_text="23:45"
+
+
+    if debug==False:
+    
+        flag=0
+        while flag==0:
+            bucket_closed_to_open_text=raw_input("--At what time does the building go from CLOSED to OPEN? (HH:MM) >>> ")
+
+            if len(bucket_closed_to_open_text)>5:
+                print "That input is too long to be in the right format"
+
+            else:
+                try:
+                    bucket_closed_to_open_text=re.search(re_time_hh_mm,bucket_closed_to_open_text).group()
+                    flag=1
+                except:
+                    print "The time you entered was not in the correct format, or was not a time"
+
+        flag=0
+        while flag==0:
+            bucket_open_to_closed_text=raw_input("--At what time does the building go from OPEN to CLOSED? (HH:MM) >>> ")
+
+            if len(bucket_open_to_closed_text)>5:
+                print "That input is too long to be in the right format"
+
+            else:
+                try:
+                    bucket_open_to_closed_text=re.search(re_time_hh_mm,bucket_open_to_closed_text).group()
+                    flag=1
+                except:
+                    print "The time you entered was not in the correct format, or was not a time"
+    else:
+        print "debug mode is on for this function. Buckut hours are 6am-6pm"
+        bucket_closed_to_open_text='06:00'
+        bucket_open_to_closed_text='18:00'
+        
+
+
+    bucket_start_day=parser.parse(bucket_start_day_text)
+    bucket_end_day=parser.parse(bucket_end_day_text)
+    
+    bucket_closed_to_open_time=parser.parse(bucket_closed_to_open_text)
+    bucket_open_to_closed_time=parser.parse(bucket_open_to_closed_text)
+
+    
+    if bucket_closed_to_open_time<bucket_open_to_closed_time:
+        bucket_specifying_open_or_closed="open"
+        bucket_start_time=bucket_closed_to_open_time
+        bucket_end_time=bucket_open_to_closed_time
+    else:
+        bucket_specifying_open_or_closed="closed"
+        bucket_start_time=bucket_open_to_closed_time
+        bucket_end_time=bucket_closed_to_open_time
+
+    bucket_current_time=bucket_start_day
+    bucket_open_closed=[]
+
+    while bucket_current_time<=bucket_end_day:
+        
+        if bucket_current_time<bucket_start_time or bucket_current_time>=bucket_end_time:
+            if bucket_specifying_open_or_closed=="open":
+                bucket_open_closed.append(0)
+            else:
+                bucket_open_closed.append(1)
+        else:
+            if bucket_specifying_open_or_closed=="open":
+                bucket_open_closed.append(1)
+            else:
+                bucket_open_closed.append(0)
+                
+        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
+
+    return bucket_open_closed
+    
+
+
+
+def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_date_index_def, end_date_index_def,
+                       interval_usage_by_day_def):
+
+    bucket_open_usage_def=[]
+    bucket_closed_usage_def=[]
+    bucket_date_def=[]
+    
+    intermediate_week_open=0
+    intermediate_week_closed=0
+
+    for i in range(start_date_index_def, end_date_index_def):
+        
+        if date_list_def[i].isoweekday()<6:
+
+            for j in range(len(bucket_operating_hours_by_day_def[i-start_date_index_def])):
+                if bucket_operating_hours_by_day_def[i-start_date_index_def][j]==1:
+                    try:
+                        intermediate_week_open+=interval_usage_by_day_def[i][j]
+                    except:
+                        print "Interval Usage did not evaluate to be an integer"
+                        print "Day: ",
+                        print date_list_def[i],
+                        print "Time: ",
+                        print (j+1)/4.0
+                else:
+                    try:
+                        intermediate_week_closed+=interval_usage_by_day_def[i][j] ##------------What the fuck is going on
+                    except:
+                        print "Interval Usage did not evaluate to be an integer",
+                        print "Day: ",
+                        print date_list_def[i],
+                        print "Time: ",
+                        print (j+1)/4.0
+                        
+        if date_list_def[i].isoweekday()==7:
+
+            bucket_date_def.append(date_list_def[i])
+            
+            bucket_open_usage_def.append(intermediate_week_open)
+            bucket_closed_usage_def.append(intermediate_week_closed)
+            
+            intermediate_week_open=0
+            intermediate_week_closed=0
+
+    return [bucket_open_usage_def, bucket_closed_usage_def, bucket_date_def]
 
 
 
@@ -326,12 +575,16 @@ def average_daily_metrics(df, sd, ed, col_name):
 ##
 ##    return main_list_with_criteria_def
 
+
+
 ##def zip_all_items_of_a_list(list_to_zip_def):
 ##    zipped_list_def=[]
 ##    for item in list_to_zip_def:
 ##        zipped_list_def.append(zip(*item))
 ##
 ##    return zipped_list_def
+
+
 
 ##def get_ave_std_of_list_of_list_of_list(list_to_analyze_def):
 ##
@@ -377,44 +630,7 @@ def average_daily_metrics(df, sd, ed, col_name):
 ##
 ##    return return_list_def
 
-def get_ave_of_k_min_values(list_to_take_mins_from_all_def,num_of_min_values_def,index_start_def, index_end_def):
 
-    ## This is done in case you want to look at a beginning of the day baseline and not have crazy
-    ## end of the day stuff get in the way.
-    
-    list_to_take_mins_from_def=list_to_take_mins_from_all_def[index_start_def:index_end_def]
-
-    if len(list_to_take_mins_from_def)<num_of_min_values_def:
-        return np.average(list_to_take_mins_from_def)
-
-    else:
-        k_min_values_def=[]
-        list_to_take_mins_from_copy_def=list(list_to_take_mins_from_def)
-        for i in range(num_of_min_values_def):
-            min_value_def=min(list_to_take_mins_from_copy_def)
-            list_to_take_mins_from_copy_def.remove(min_value_def)
-            k_min_values_def.append(min_value_def)
-
-        try:
-            k_min_average_def=np.average(k_min_values_def)
-        except:
-            k_min_average_def="Not enough min values"
-
-        return k_min_average_def
-
-
-def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_def, end_index_def):
-    
-    baseline_by_day_def=[]
-    for i in range(len(list_of_usages_by_day_def)):
-        baseline_by_day_def.append([])
-
-    for i in range(len(list_of_usages_by_day_def)):
-        baseline_def=get_ave_of_k_min_values(list_of_usages_by_day_def[i],num_values_def, start_index_def, end_index_def)
-        for j in range(len(list_of_usages_by_day_def[i])):
-            baseline_by_day_def[i].append(baseline_def)
-
-    return baseline_by_day_def
 
 ##def get_start_time_each_day(interval_time_by_day_def,interval_usage_by_day_def, baseline_by_day_def, percent_above_baseline_def, threshold_def):
 ##
@@ -464,6 +680,7 @@ def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_de
 ##
 ##
 ##    return start_time_each_day_def
+
 
 
 ##def get_end_time_each_day(interval_time_by_day_def, interval_usage_by_day_def, baseline_by_day_def, start_time_each_day_def, percent_above_baseline_def, thresh_end_def):
@@ -549,37 +766,6 @@ def get_baseline_by_day(list_of_usages_by_day_def,num_values_def, start_index_de
 ##    return end_time_each_day_def
 
 
-def get_date_range_from_user(debug_mode):
-
-    if debug_mode==False:
-        from dateutil import parser
-
-        got_to_end=False
-        while got_to_end==False:
-            try:
-                start_date=raw_input("--Start Date - All common formats are fine, use full year: ")
-                sd_obj=parser.parse(start_date)
-                got_to_end=True
-            except:
-                print "--Date format not recognized or date does not exist"
-
-        got_to_end=False
-        while got_to_end==False:
-            try:
-                end_date=raw_input("--End Date - All common formats are fine, use full year: ")
-                ed_obj=parser.parse(end_date)
-                if sd_obj<ed_obj:
-                    got_to_end=True
-                else:
-                    print "--What! enter the dates in order, fool!"
-            except:
-                print "--Date format not recognized or date does not exist"
-
-        return [sd_obj, ed_obj]
-
-    else:
-        return [datetime.datetime(2013,7,1), datetime.datetime(2013,9,30)]
-
 
 ##def get_stats_by_day_in_range(interval_usage_by_day_def, date_list_def, date_range_def):
 ##    
@@ -638,285 +824,206 @@ def get_date_range_from_user(debug_mode):
 ##    return [wkday_ave_def,wkend_ave_def,peak_day_usage_def,peak_date_def]
 
 
-def get_bucket_date_range_from_user(end_date=""):
-    #bucket_end_date_text="6/30/2013"
-
-##    bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
-##    
-##    bucket_end_date=parser.parse(bucket_end_date_text)
-
-    if end_date=="":
-        got_to_end=False
-        while got_to_end==False:
-            try:
-                bucket_end_date_text=raw_input("What is the end date of the year you want to use for bucket analysis? >>> ")
-                if len(bucket_end_date_text)<=5:
-                    error="str"+5
-                else:
-                    bucket_end_date=parser.parse(bucket_end_date_text)
-                    got_to_end=True
-            except:
-                print "Date format not recognized or date does not exist"
-
-    else:
-        bucket_end_date=end_date
-
-            
-    while bucket_end_date.isoweekday()!=1:
-        bucket_end_date=bucket_end_date-datetime.timedelta(days=1)
-
-    bucket_start_date=bucket_end_date-datetime.timedelta(days=364)
-
-    return [bucket_start_date, bucket_end_date]
 
 
-def get_operating_hours_from_user():
-
-    #bucket_specifying_open_or_closed="open"
-
-    got_to_end=False
-    acceptable_answers=["open","closed"]
-    while got_to_end==False:
-        
-        bucket_specifying_open_or_closed=raw_input("--Are you specifying a time when the building is open, or when it is closed? >>> ")
-
-        if bucket_specifying_open_or_closed in acceptable_answers:
-            got_to_end=True
-        else:
-            print "--Please input either open or closed"
-
-    bucket_start_day_text="0:00"
-    #bucket_start_time_text="6:00"
-    #bucket_end_time_text="18:00"
-    bucket_end_day_text="23:45"
-
-    bucket_start_time_text=raw_input("--Input start time. No error checking here so be careful. hh:mm >>> ")
-    bucket_end_time_text=raw_input("--Input end time. No error checking here so be careful. hh:mm >>> ")
-
-    bucket_start_day=parser.parse(bucket_start_day_text)
-    bucket_start_time=parser.parse(bucket_start_time_text)
-    bucket_end_time=parser.parse(bucket_end_time_text)
-    bucket_end_day=parser.parse(bucket_end_day_text)
-
-    
-    bucket_current_time=bucket_start_day
-    bucket_open_closed=[]
-
-    while bucket_current_time<=bucket_end_day:
-        
-        if bucket_current_time<bucket_start_time or bucket_current_time>=bucket_end_time:
-            if bucket_specifying_open_or_closed=="open":
-                bucket_open_closed.append(0)
-            else:
-                bucket_open_closed.append(1)
-        else:
-            if bucket_specifying_open_or_closed=="open":
-                bucket_open_closed.append(1)
-            else:
-                bucket_open_closed.append(0)
-                
-        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
-
-    return bucket_open_closed
-    
-
-
-
-def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_date_index_def, end_date_index_def,
-                       interval_usage_by_day_def):
-
-    bucket_open_usage_def=[]
-    bucket_closed_usage_def=[]
-    bucket_date_def=[]
-    
-    intermediate_week_open=0
-    intermediate_week_closed=0
-
-    for i in range(start_date_index_def, end_date_index_def):
-        
-        if date_list_def[i].isoweekday()<6:
-
-            for j in range(len(bucket_operating_hours_by_day_def[i-start_date_index_def])):
-                if bucket_operating_hours_by_day_def[i-start_date_index_def][j]==1:
-                    try:
-                        intermediate_week_open+=interval_usage_by_day_def[i][j]
-                    except:
-                        print "Interval Usage did not evaluate to be an integer"
-                        print "Day: ",
-                        print date_list_def[i],
-                        print "Time: ",
-                        print (j+1)/4.0
-                else:
-                    try:
-                        intermediate_week_closed+=interval_usage_by_day_def[i][j] ##------------What the fuck is going on
-                    except:
-                        print "Interval Usage did not evaluate to be an integer",
-                        print "Day: ",
-                        print date_list_def[i],
-                        print "Time: ",
-                        print (j+1)/4.0
-                        
-        if date_list_def[i].isoweekday()==7:
-
-            bucket_date_def.append(date_list_def[i])
-            
-            bucket_open_usage_def.append(intermediate_week_open)
-            bucket_closed_usage_def.append(intermediate_week_closed)
-            
-            intermediate_week_open=0
-            intermediate_week_closed=0
-
-    return [bucket_open_usage_def, bucket_closed_usage_def, bucket_date_def]
-
-
-
-
-#import pylab as pl
 
 ## ----------------This is done by pandas now---------------------
+##def interval2day(interval_data_def):
+##
+##
+##    number_of_non_date_columns_def=len(interval_data_def[1:])
+##    
+##    number_of_columns_def=len(interval_data_def)
+##
+##    ## The datetime is assumed to be the first list 
+##    datetime_list_def=interval_data_def[0]
+##
+##    ## Create space for the lists of data (exclude the date)
+##    data_lists_def=[]
+##
+##    ## Now I have a list of at least one other list, but possibly more
+##    for i in range(1,number_of_columns_def):
+##        
+##        data_lists_def.append(interval_data_def[i])
+##
+##
+##    ## Get the first date (assumed to be the earliest date)
+##    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
+##
+##    ## Get the last date (assumed to be the most recent date)
+##    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
+##
+##    ## Prepare for creation of date list
+##    date_list_def=[]
+##    
+##    ## This is done this way at the moment in case there are missing dates, at least every day will still have
+##    ## a space allocated for it. 
+##    while current_date_def<=end_date_def:
+##        date_list_def.append(current_date_def)
+##        current_date_def=current_date_def+datetime.timedelta(days=1)
+##
+##    ## Make a number of unique lists
+##    unique_lists=[]
+##    for i in range(number_of_columns_def):
+##        unique_lists.append([])
+##        for j in range(len(date_list_def)):
+##            unique_lists[i].append([])
+##
+##    datetime_list_by_day_def=unique_lists[0]
+##                                   
+##    data_lists_by_day_def=[]
+##    ## For as many columns of data there are
+##    for i in range(1,number_of_columns_def):
+##        ## Make room for that column of data to be sorted by day
+##        data_lists_by_day_def.append(unique_lists[i])
+##
+##        
+##    ## Go through the huge list and put everything where it goes.
+##    ## FOR EVERY SINGLE DATA POINT in the original datetime list
+##    for i in range(len(datetime_list_def)):
+##
+##        ## Strip the time off of the datetime in the interval datetime list
+##        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
+##
+##        ## Then find the index for that day in the date list
+##        index_def=date_list_def.index(interval_data_day_def)
+##        #print index_def
+##
+##        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+##
+##        for k in range(len(interval_data_def[1:])):
+##            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+##                                       
+##    return_list_def=[]
+##
+##    for i in range(len(interval_data_def[1:])):
+##        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
+##
+##    return return_list_def
 
-############def interval2day(interval_data_def):
-############
-############
-############    number_of_non_date_columns_def=len(interval_data_def[1:])
-############    
-############    number_of_columns_def=len(interval_data_def)
-############
-############    ## The datetime is assumed to be the first list 
-############    datetime_list_def=interval_data_def[0]
-############
-############    ## Create space for the lists of data (exclude the date)
-############    data_lists_def=[]
-############
-############    ## Now I have a list of at least one other list, but possibly more
-############    for i in range(1,number_of_columns_def):
-############        
-############        data_lists_def.append(interval_data_def[i])
-############
-############
-############    ## Get the first date (assumed to be the earliest date)
-############    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
-############
-############    ## Get the last date (assumed to be the most recent date)
-############    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
-############
-############    ## Prepare for creation of date list
-############    date_list_def=[]
-############    
-############    ## This is done this way at the moment in case there are missing dates, at least every day will still have
-############    ## a space allocated for it. 
-############    while current_date_def<=end_date_def:
-############        date_list_def.append(current_date_def)
-############        current_date_def=current_date_def+datetime.timedelta(days=1)
-############
-############    ## Make a number of unique lists
-############    unique_lists=[]
-############    for i in range(number_of_columns_def):
-############        unique_lists.append([])
-############        for j in range(len(date_list_def)):
-############            unique_lists[i].append([])
-############
-############    datetime_list_by_day_def=unique_lists[0]
-############                                   
-############    data_lists_by_day_def=[]
-############    ## For as many columns of data there are
-############    for i in range(1,number_of_columns_def):
-############        ## Make room for that column of data to be sorted by day
-############        data_lists_by_day_def.append(unique_lists[i])
-############
-############        
-############    ## Go through the huge list and put everything where it goes.
-############    ## FOR EVERY SINGLE DATA POINT in the original datetime list
-############    for i in range(len(datetime_list_def)):
-############
-############        ## Strip the time off of the datetime in the interval datetime list
-############        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
-############
-############        ## Then find the index for that day in the date list
-############        index_def=date_list_def.index(interval_data_day_def)
-############        #print index_def
-############
-############        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
-############
-############        for k in range(len(interval_data_def[1:])):
-############            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
-############                                       
-############    return_list_def=[]
-############
-############    for i in range(len(interval_data_def[1:])):
-############        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
-############
-############    return return_list_def
 
-##########def interval2dayPandas(interval_data_def):
-##########
-##########
-##########    number_of_non_date_columns_def=len(interval_data_def[1:])
-##########    
-##########    number_of_columns_def=len(interval_data_def)
-##########
-##########    ## The datetime is assumed to be the first list 
-##########    datetime_list_def=interval_data_def[0]
-##########
-##########    ## Create space for the lists of data (exclude the date)
-##########    data_lists_def=[]
-##########
-##########    ## Now I have a list of at least one other list, but possibly more
-##########    for i in range(1,number_of_columns_def):
-##########        
-##########        data_lists_def.append(interval_data_def[i])
-##########
-##########
-##########    ## Get the first date (assumed to be the earliest date)
-##########    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
-##########
-##########    ## Get the last date (assumed to be the most recent date)
-##########    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
-##########
-##########    ## Prepare for creation of date list
-##########    date_list_def=[]
-##########    
-##########    ## This is done this way at the moment in case there are missing dates, at least every day will still have
-##########    ## a space allocated for it. 
-##########    while current_date_def<=end_date_def:
-##########        date_list_def.append(current_date_def)
-##########        current_date_def=current_date_def+datetime.timedelta(days=1)
-##########
-##########    ## Make a number of unique lists
-##########    unique_lists=[]
-##########    for i in range(number_of_columns_def):
-##########        unique_lists.append([])
-##########        for j in range(len(date_list_def)):
-##########            unique_lists[i].append([])
-##########
-##########    datetime_list_by_day_def=unique_lists[0]
-##########                                   
-##########    data_lists_by_day_def=[]
-##########    ## For as many columns of data there are
-##########    for i in range(1,number_of_columns_def):
-##########        ## Make room for that column of data to be sorted by day
-##########        data_lists_by_day_def.append(unique_lists[i])
-##########
-##########        
-##########    ## Go through the huge list and put everything where it goes.
-##########    ## FOR EVERY SINGLE DATA POINT in the original datetime list
-##########    for i in range(len(datetime_list_def)):
-##########
-##########        ## Strip the time off of the datetime in the interval datetime list
-##########        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
-##########
-##########        ## Then find the index for that day in the date list
-##########        index_def=date_list_def.index(interval_data_day_def)
-##########        #print index_def
-##########
-##########        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
-##########
-##########        for k in range(len(interval_data_def[1:])):
-##########            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
-##########                                       
-##########    return_list_def=[]
-##########
-##########    for i in range(len(interval_data_def[1:])):
-##########        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
-##########
-##########    return return_list_def
+
+##def interval2dayPandas(interval_data_def):
+##
+##
+##    number_of_non_date_columns_def=len(interval_data_def[1:])
+##    
+##    number_of_columns_def=len(interval_data_def)
+##
+##    ## The datetime is assumed to be the first list 
+##    datetime_list_def=interval_data_def[0]
+##
+##    ## Create space for the lists of data (exclude the date)
+##    data_lists_def=[]
+##
+##    ## Now I have a list of at least one other list, but possibly more
+##    for i in range(1,number_of_columns_def):
+##        
+##        data_lists_def.append(interval_data_def[i])
+##
+##
+##    ## Get the first date (assumed to be the earliest date)
+##    current_date_def=datetime.datetime(datetime_list_def[0].year, datetime_list_def[0].month, datetime_list_def[0].day)
+##
+##    ## Get the last date (assumed to be the most recent date)
+##    end_date_def=datetime.datetime(datetime_list_def[-1].year, datetime_list_def[-1].month, datetime_list_def[-1].day)
+##
+##    ## Prepare for creation of date list
+##    date_list_def=[]
+##    
+##    ## This is done this way at the moment in case there are missing dates, at least every day will still have
+##    ## a space allocated for it. 
+##    while current_date_def<=end_date_def:
+##        date_list_def.append(current_date_def)
+##        current_date_def=current_date_def+datetime.timedelta(days=1)
+##
+##    ## Make a number of unique lists
+##    unique_lists=[]
+##    for i in range(number_of_columns_def):
+##        unique_lists.append([])
+##        for j in range(len(date_list_def)):
+##            unique_lists[i].append([])
+##
+##    datetime_list_by_day_def=unique_lists[0]
+##                                   
+##    data_lists_by_day_def=[]
+##    ## For as many columns of data there are
+##    for i in range(1,number_of_columns_def):
+##        ## Make room for that column of data to be sorted by day
+##        data_lists_by_day_def.append(unique_lists[i])
+##
+##        
+##    ## Go through the huge list and put everything where it goes.
+##    ## FOR EVERY SINGLE DATA POINT in the original datetime list
+##    for i in range(len(datetime_list_def)):
+##
+##        ## Strip the time off of the datetime in the interval datetime list
+##        interval_data_day_def=datetime.datetime(datetime_list_def[i].year,datetime_list_def[i].month,datetime_list_def[i].day)
+##
+##        ## Then find the index for that day in the date list
+##        index_def=date_list_def.index(interval_data_day_def)
+##        #print index_def
+##
+##        datetime_list_by_day_def[index_def].append(datetime_list_def[i])
+##
+##        for k in range(len(interval_data_def[1:])):
+##            data_lists_by_day_def[k][index_def].append(data_lists_def[k][i])
+##                                       
+##    return_list_def=[]
+##
+##    for i in range(len(interval_data_def[1:])):
+##        return_list_def.append([datetime_list_by_day_def,data_lists_by_day_def[i]])
+##
+##    return return_list_def
+
+
+
+##def get_operating_hours_from_user_old():
+##
+##    #bucket_specifying_open_or_closed="open"
+##    ## I am rewriting this to have error checking and also to be more intuitive
+##
+##    got_to_end=False
+##    acceptable_answers=["open","closed"]
+##    while got_to_end==False:
+##        
+##        bucket_specifying_open_or_closed=raw_input("--Are you specifying a time when the building is open, or when it is closed? >>> ")
+##
+##        if bucket_specifying_open_or_closed in acceptable_answers:
+##            got_to_end=True
+##        else:
+##            print "--Please input either open or closed"
+##
+##    bucket_start_day_text="0:00"
+##    #bucket_start_time_text="6:00"
+##    #bucket_end_time_text="18:00"
+##    bucket_end_day_text="23:45"
+##
+##    bucket_start_time_text=raw_input("--Input start time. No error checking here so be careful. hh:mm >>> ")
+##    bucket_end_time_text=raw_input("--Input end time. No error checking here so be careful. hh:mm >>> ")
+##
+##    bucket_start_day=parser.parse(bucket_start_day_text)
+##    bucket_start_time=parser.parse(bucket_start_time_text)
+##    bucket_end_time=parser.parse(bucket_end_time_text)
+##    bucket_end_day=parser.parse(bucket_end_day_text)
+##
+##    
+##    bucket_current_time=bucket_start_day
+##    bucket_open_closed=[]
+##
+##    while bucket_current_time<=bucket_end_day:
+##        
+##        if bucket_current_time<bucket_start_time or bucket_current_time>=bucket_end_time:
+##            if bucket_specifying_open_or_closed=="open":
+##                bucket_open_closed.append(0)
+##            else:
+##                bucket_open_closed.append(1)
+##        else:
+##            if bucket_specifying_open_or_closed=="open":
+##                bucket_open_closed.append(1)
+##            else:
+##                bucket_open_closed.append(0)
+##                
+##        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
+##
+##    return bucket_open_closed

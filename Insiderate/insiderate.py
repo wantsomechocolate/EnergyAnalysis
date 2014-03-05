@@ -1,24 +1,56 @@
-
 import numpy as np, pylab as pl, pandas as pd
-import wam as wam, datetime
+import wam as wam, datetime, time, os
+from marbles import glass as chan
 
-output_book = pd.ExcelWriter('output.xlsx')
+time_list=[]
+time_list.append(time.time())
+
+divider="\n---------------------------------------------------------------------------\n"
+print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)-------------------",divider
+
+## Have user navigate to desired book and show them what they chose.
+print "--Please navigate to the .xlsx file containing your data\n"
+book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
+print "--You chose to analyze   :"+book_name
+
+## Get output book name by adding results and a time stamp to the filename
+output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
+output_book = pd.ExcelWriter(output_bookname)
+print "--Output to be saved here:"+output_bookname+"."
 
 
-book_name='DataInput2013.xlsx'
-num_matches=5
+## How many similar days do you want to return?
+print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
+For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
+default_choice=5
+num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
 
-print "Getting days to be excluded from calculations from file."
+## The days to exclude are in a seperate text file
+print divider
+print "Getting list of holidays from text file to exclude them from analysis"
 exclude_days=wam.get_excluded_days()
 
+print divider
 
-start_date_pp=datetime.datetime(2013,9,1,0,0)
-end_date_pp=datetime.datetime(2013,12,31,23,45)
+## Get the date range for the performance period (quarter or month usually)
+## In the future this function will check to make sure that the dates given are within the bounds of the data given
+## For both weather and energy usage.
+## These date ranges should be DATES not DATETIMES
+print "Enter the start and end date for the performance period (The quarter or month usually)."
+performance_period=wam.get_date_range_from_user()
+start_date_pp=performance_period[0]
+end_date_pp=performance_period[1]
 
+print divider
 
-start_date_all=datetime.datetime(2013,1,1,0,0)
-end_date_all=datetime.datetime(2013,12,31,23,45)
+## Date range for the data to be analysed for band reasons. If you give 2.5 years of data, but want to analyze
+## only two years, say so here! I should give choice to "Use entire data set"
+print "Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
+analysis_period=wam.get_date_range_from_user()
+start_date_all=analysis_period[0]
+end_date_all=analysis_period[1]
 
+print divider
 
 ## A map of all the data
 print "Reading in excel data."
@@ -56,22 +88,9 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
+## Write to excel
 weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
-
-
-##print "That's all for now, bye."
-##
-##from pandas import ExcelWriter
-##
-##out='test.xlsx'
-##
-##writer = ExcelWriter(out)
-##
-##weather_average_day_profile_dataframe_pp.to_excel(writer,'Weather Average Day')
-##weather_daily_dataframe.to_excel(writer,'Weather Daily')
-##
-##writer.save()
 
 
 ##-------------- Cue Energy Analysis ----------------------
@@ -250,10 +269,16 @@ else:
 
 energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
 
-## This is useless without the bucket analysis, That is the next priority. After getting that, use the
-## plotting functionality to graph stuff, and then finally print stuff to excel
-## After that look into the monthly numbers. 
 
+
+
+
+#------------------------------------------------------------------------
+start_time_for_plotting_average_day=datetime.datetime(2000,1,1,0,0)
+time_range_for_plotting_average_day=[]
+for i in range(96):
+    time_range_for_plotting_average_day.append(start_time_for_plotting_average_day+datetime.timedelta(minutes=15*i))
+#------------------------------------------------------------------------
 
 
 ## Bucket analysis
@@ -262,9 +287,18 @@ bucketed_usage_all_streams=[]
 
 for data_col in range(1,num_data_cols+1):
 
+    zero_index=data_col-1
+
 ## 1.) Find date range for most recent year and take slice from main thing.
 
 ## Organize the interval data into a list of lists. Days of hours.
+
+    print "Showing the average weekday, weekend and day with peak for "+ str(column_headings[zero_index])+"."
+    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[0]],'g-')
+    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[1]],'b-')
+    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[2]],'r-')
+    pl.show()
+
     
     new_df=pd.DataFrame()
     new_df['Date']=energy_interval_dataframe['Date']
@@ -278,7 +312,7 @@ for data_col in range(1,num_data_cols+1):
 
     date_list=list(energy_interval_dataframe.groupby('Date').agg(np.sum).index)
 
-    end_date_bucket=end_date_pp.date()
+    end_date_bucket=end_date_pp
 
     bucket_date_range=wam.get_bucket_date_range_from_user(end_date=end_date_bucket)
 
@@ -299,7 +333,7 @@ for data_col in range(1,num_data_cols+1):
 
     ## Instead of the open closed bs, as "What time does the building go from closed to open?"
     ## and "What time does the building go from open to closed?"
-    bucket_open_closed_hours=wam.get_operating_hours_from_user()
+    bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=False)
 
     ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
     bucket_operating_hours_by_day=[]

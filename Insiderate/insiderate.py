@@ -333,6 +333,7 @@ for data_col in range(1,num_data_cols+1):
 
     ## Instead of the open closed bs, as "What time does the building go from closed to open?"
     ## and "What time does the building go from open to closed?"
+    print divider
     bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=False)
 
     ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
@@ -340,6 +341,7 @@ for data_col in range(1,num_data_cols+1):
     for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
         bucket_operating_hours_by_day.append(bucket_open_closed_hours)
 
+    print divider
     bucketed_usage=wam.get_bucketed_usage(bucket_operating_hours_by_day, date_list, start_date_index, end_date_index, int_data_by_day)
 
     bucketed_usage_all_streams.append(bucketed_usage)
@@ -359,7 +361,19 @@ bucketed_usage_df.to_excel(output_book,"Bucketed Usage")
 
 
 
-    
+#---------------------------------------------------------------------------------------------
+## LAST THING I NEED TO DO
+## Take the performance period dataframe and group it by month
+## then for every group, get the sum of usage for that month, the peak demand for that month (which I'll already have)
+## And also a new dataframe that is just the peak weak in that month.
+
+## I also need to go in and add up the amount of usage above and below the band for each day?
+## I think I might be using days when I'm supposed to be using weeks?
+
+## Then consider automatically generating those calenders because I can use the excel printer to change color and stuff!
+#---------------------------------------------------------------------------------------------
+
+energy_interval_dataframe.groupby(['Year', 'Month'], sort=False, as_index=False).agg({'Electric (kWh)':np.sum})
 
 
 ## Do the same thing for months

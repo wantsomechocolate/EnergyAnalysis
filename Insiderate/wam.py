@@ -194,6 +194,12 @@ def datetime2bday(datetime):
     else:
         return 'Weekend'
 
+def datetime2month(datetime):
+    return datetime.month
+
+def datetime2year(datetime):
+    return datetime.year
+
 
 
 ## I didn't know how to pass a function with variables to the agg operator so
@@ -209,6 +215,10 @@ def prepare_dataframe_for_grouping_by_time(df, sd, ed):
 
     ## Add hour column
     df['Hour']=df[df.columns[0]].apply(datetime2hour)
+
+    df['Month']=df[df.columns[0]].apply(datetime2month)
+
+    df['Year']=df[df.columns[0]].apply(datetime2year)
 
     ## Add a daytype that seperates days into Weekday and Holiday/Weekend
     df['DayType']=df[df.columns[0]].apply(datetime2bday)

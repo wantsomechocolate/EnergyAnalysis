@@ -243,17 +243,16 @@ def prepare_df_indexed_by_time_for_grouping_by_day(df):
 
 def average_daily_metrics(df, sd, ed, col_name):
 
-
+    ## Group by date so that I can use the start and end date to get the data for that day
+    ## So that for the start date I can take the min value as the first timestamp in the
+    ## performance period and the last time stamp on the last day as the end of the performance
+    ## period. 
     group=df.groupby('Date')
+
     start_timestamp=min(group.get_group(sd).index)
     end_timestamp=max(group.get_group(ed).index)
 
-
     df=df[start_timestamp: end_timestamp]
-
-
-    ## Now I'm interested only in performance period
-    #df=df[sd:ed]
 
     identifier=col_name[:4]
 

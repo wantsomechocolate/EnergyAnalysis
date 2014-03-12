@@ -2,6 +2,8 @@ import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime, time, os
 from marbles import glass as chan
 
+debug=True
+
 time_list=[]
 time_list.append(time.time())
 
@@ -9,9 +11,14 @@ divider="\n---------------------------------------------------------------------
 print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)-------------------",divider
 
 ## Have user navigate to desired book and show them what they chose.
-print "--Please navigate to the .xlsx file containing your data\n"
-book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
-print "--You chose to analyze   :"+book_name
+if debug==False:
+    print "--Please navigate to the .xlsx file containing your data\n"
+    book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
+    print "--You chose to analyze   :"+book_name
+else:
+    print "debug mode is on"
+    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/OneDataStream.xlsx'
+    print book_name+"was chosen for you"
 
 ## Get output book name by adding results and a time stamp to the filename
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
@@ -20,11 +27,18 @@ print "--Output to be saved here:"+output_bookname+"."
 
 
 ## How many similar days do you want to return?
-print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
-For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
-default_choice=5
-num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
+if debug==False:
 
+    print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
+    For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
+    default_choice=5
+    num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
+
+else:
+    print "debug mode is on"
+    num_matches=5
+    print "num_matches was set to "+str(num_matches)
+    
 ## The days to exclude are in a seperate text file
 print divider
 print "Getting list of holidays from text file to exclude them from analysis"
@@ -36,19 +50,30 @@ print divider
 ## In the future this function will check to make sure that the dates given are within the bounds of the data given
 ## For both weather and energy usage.
 ## These date ranges should be DATES not DATETIMES
-print "Enter the start and end date for the performance period (The quarter or month usually)."
-performance_period=wam.get_date_range_from_user()
-start_date_pp=performance_period[0]
-end_date_pp=performance_period[1]
+if debug==False:
+    print "Enter the start and end date for the performance period (The quarter or month usually)."
+    performance_period=wam.get_date_range_from_user()
+    start_date_pp=performance_period[0]
+    end_date_pp=performance_period[1]
+else:
+    start_date_pp=datetime.date(2013,6,1)
+    end_date_pp=datetime.date(2013,8,31)
+    print "2013 Q3 chosen as performance period"
+    
 
 print divider
 
 ## Date range for the data to be analysed for band reasons. If you give 2.5 years of data, but want to analyze
 ## only two years, say so here! I should give choice to "Use entire data set"
-print "Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
-analysis_period=wam.get_date_range_from_user()
-start_date_all=analysis_period[0]
-end_date_all=analysis_period[1]
+if debug==False:
+    print "Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
+    analysis_period=wam.get_date_range_from_user()
+    start_date_all=analysis_period[0]
+    end_date_all=analysis_period[1]
+else:
+    print "Chose two years priod to 8/31/13 as analysis period"
+    start_date_all=datetime.date(2011,9,1)
+    end_date_all=datetime.date(2013,8,31)
 
 print divider
 
@@ -262,13 +287,16 @@ else:
 
 ## If they have more than one item then use join and the 'outer' argument for the how parameter to join them by column into one big df
 if len(energy_band_stats_by_day_df_list)==1:
-    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df[0]
+    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0]
 else:  
     energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0].join(energy_band_stats_by_day_df_list[1:], how='outer')
 
 
 energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
 
+energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end_date_pp]
+
+energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
 
@@ -293,11 +321,14 @@ for data_col in range(1,num_data_cols+1):
 
 ## Organize the interval data into a list of lists. Days of hours.
 
-    print "Showing the average weekday, weekend and day with peak for "+ str(column_headings[zero_index])+"."
-    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[0]],'g-')
-    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[1]],'b-')
-    ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[2]],'r-')
-    pl.show()
+    if debug==False:
+        print "Showing the average weekday, weekend and day with peak for "+ str(column_headings[zero_index])+"."
+        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[0]],'g-')
+        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[1]],'b-')
+        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[2]],'r-')
+        pl.show()
+    else:
+        print "Not showing any graphs because debug is on"
 
     
     new_df=pd.DataFrame()
@@ -334,7 +365,9 @@ for data_col in range(1,num_data_cols+1):
     ## Instead of the open closed bs, as "What time does the building go from closed to open?"
     ## and "What time does the building go from open to closed?"
     print divider
-    bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=False)
+
+
+    bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=debug)
 
     ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
     bucket_operating_hours_by_day=[]
@@ -359,6 +392,18 @@ bucketed_usage_df=bucketed_usage_df.set_index('Date')
 
 bucketed_usage_df.to_excel(output_book,"Bucketed Usage")
 
+
+bucketed_usage_ytd_df=bucketed_usage_df
+bucketed_usage_ytd_df['Date']=bucketed_usage_df.index
+bucketed_usage_ytd_df['Year']=bucketed_usage_ytd_df['Date'].apply(wam.datetime2year)
+bucketed_usage_groups_by_year=bucketed_usage_ytd_df.groupby('Year')
+bucketed_usage_list_years=list(bucketed_usage_groups_by_year.groups.iterkeys())
+bucketed_usage_max_year=max(bucketed_usage_list_years)
+bucketed_usage_ytd_df=bucketed_usage_groups_by_year.get_group(bucketed_usage_max_year)
+
+bucketed_usage_ytd_df=bucketed_usage_ytd_df.iloc[:,0:len(column_headings)*2]
+
+bucketed_usage_ytd_df.to_excel(output_book,"Bucketed Usage YTD")
 
 
 #---------------------------------------------------------------------------------------------

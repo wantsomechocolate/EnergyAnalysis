@@ -2,7 +2,7 @@ import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime, time, os
 from marbles import glass as chan
 
-debug=True
+debug=False
 
 time_list=[]
 time_list.append(time.time())
@@ -17,7 +17,7 @@ if debug==False:
     print "--You chose to analyze   :"+book_name
 else:
     print "debug mode is on"
-    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/OneDataStream.xlsx'
+    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/OneDataStreamNoWeather.xlsx'
     print book_name+"was chosen for you"
 
 ## Get output book name by adding results and a time stamp to the filename
@@ -28,7 +28,6 @@ print "--Output to be saved here:"+output_bookname+"."
 
 ## How many similar days do you want to return?
 if debug==False:
-
     print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
     For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
     default_choice=5
@@ -45,6 +44,103 @@ print "Getting list of holidays from text file to exclude them from analysis"
 exclude_days=wam.get_excluded_days()
 
 print divider
+
+
+
+
+
+
+
+
+
+
+
+weather_book_name='program_data/WeatherData.xlsx'
+
+
+## Get the weather data
+print "Reading in excel data."
+wb = pd.ExcelFile(weather_book_name)
+
+## The weather info currently resides on the second tab. Is it better to refer by name or by position!?
+print "Reading in data from first sheet and creating a dataframe."
+weather_interval_dataframe_all=wb.parse(wb.sheet_names[0])
+
+print "Duplicating the first column and setting as the index."
+## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
+weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
+
+##print "Preparing data from for grouping by various time based criteria"
+#### Preparing data from for grouping by various time based criteria
+##
+##
+##
+#####################################################################3
+##
+##
+##
+#### Do something more intelligent than fail when there is not enough data in the weather spreadsheet to properly analyze the
+#### desired date range!!!!!
+##weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
+##
+##
+##
+#######################################################################
+##
+##
+#### Group the data by calendar day via the groupby method.
+##print "Grouping the data by calandar day."
+##weather_daily_grouping=weather_interval_dataframe.groupby('Date')
+##
+#### Create a dataframe from the group by taking the mean for each one.
+##print "Calculating the mean of each group for new dataframe."
+##weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.columns[1]].agg({'Mean' : np.mean})
+##
+#### This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
+#### and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
+#### It adds those results to the data frame and then returns it.
+##print "Getting k 1d nearest neighbors in the average day dataframe."
+##weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
+##
+#### This function takes a df of interval data (multiple readings per day)
+#### and slices it down to the given dates and returns a df representing a single day
+#### with the average weekday, average weekend, peak day, and min day
+##weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
+##
+##
+#### Write to excel
+##weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
+##
+
+
+
+
+
+
+
+
+
+wb = pd.ExcelFile(book_name)
+
+
+##-------------- Cue Energy Analysis ----------------------
+print "Reading in energy data"
+energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
+
+print "Getting the number of data columns"
+num_data_cols=len(energy_interval_dataframe_all.columns)-1
+
+print "Get list of data streams"
+column_headings=list(energy_interval_dataframe_all.columns)
+dummy=column_headings.pop(0)
+
+print "Make timestamp index and first column"
+energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
+
+
+
+
+
 
 ## Get the date range for the performance period (quarter or month usually)
 ## In the future this function will check to make sure that the dates given are within the bounds of the data given
@@ -77,21 +173,32 @@ else:
 
 print divider
 
-## A map of all the data
-print "Reading in excel data."
-wb = pd.ExcelFile(book_name)
 
-## The weather info currently resides on the second tab. Is it better to refer by name or by position!?
-print "Reading in data from second sheet and creating a dataframe."
-weather_interval_dataframe_all=wb.parse(wb.sheet_names[1])
 
-print "Duplicating the first column and setting as the index."
-## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
-weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
+
+
+
+
+
+
 
 print "Preparing data from for grouping by various time based criteria"
 ## Preparing data from for grouping by various time based criteria
+
+
+
+###################################################################3
+
+
+
+## Do something more intelligent than fail when there is not enough data in the weather spreadsheet to properly analyze the
+## desired date range!!!!!
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
+
+
+
+#####################################################################
+
 
 ## Group the data by calendar day via the groupby method.
 print "Grouping the data by calandar day."
@@ -118,22 +225,32 @@ weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 
 
-##-------------- Cue Energy Analysis ----------------------
-print "Reading in energy data"
-energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
-print "Getting the number of data columns"
-num_data_cols=len(energy_interval_dataframe_all.columns)-1
 
-print "Get list of data streams"
-column_headings=list(energy_interval_dataframe_all.columns)
-dummy=column_headings.pop(0)
 
-print "Make timestamp index and first column"
-energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 print "Prepare dataframe for grouping by time"
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
+
+
 
 print "Getting average day profile metrics"
 ##df_ave_day_dict={}
@@ -223,7 +340,7 @@ for data_col in range(1,num_data_cols+1):
 
 
     ## I wanted to print this data but maybe later
-    #energy_interval_band_data_df.to_excel(output_book,data_heading+"-SimDayData")
+    energy_interval_band_data_df.to_excel(output_book,data_heading+"-SimDayData")
 
 
     ## Get the mean of all values in either the stats df or the band df they are the same right now
@@ -294,8 +411,9 @@ else:
 
 energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
 
-energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end_date_pp]
 
+
+energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end_date_pp]
 energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
@@ -378,6 +496,7 @@ for data_col in range(1,num_data_cols+1):
     bucketed_usage=wam.get_bucketed_usage(bucket_operating_hours_by_day, date_list, start_date_index, end_date_index, int_data_by_day)
 
     bucketed_usage_all_streams.append(bucketed_usage)
+
 
 
 bucketed_usage_df=pd.DataFrame()

@@ -45,6 +45,7 @@
 ## PAGE 5
 ## The bucket analysis graph can be linked over automatically
 ## the percentages underneath can also be linked over automatically
+## Instead of linking, condider doing the entire calculation in python.
 
 ## PAGE 6-9 for another data stream will have the same fate
 

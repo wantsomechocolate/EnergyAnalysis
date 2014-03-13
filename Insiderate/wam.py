@@ -15,7 +15,7 @@ def get_excluded_days():
 
     ## this filename is hardcoded in, the file will be shipped with
     ## the program so that users can add to it. 
-    filename='exclude_days.txt'
+    filename='program_data/exclude_days.txt'
     fh=open(filename,'r')
     contents=fh.readlines()
     exclude_days=[]

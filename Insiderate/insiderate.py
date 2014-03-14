@@ -1,138 +1,108 @@
+
+
+##############################---------------Imports-------------------#######################
+
 import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime, time, os
 from marbles import glass as chan
 
-debug=False
 
+
+## This allows the program to run completely without user input, or not. 
+debug=True
+divider="\n---------------------------------------------------------------------------\n"
+
+
+## Keep track of the time it takes to do various things
 time_list=[]
 time_list.append(time.time())
 
-divider="\n---------------------------------------------------------------------------\n"
+
 print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)-------------------",divider
+
+
+
+##############################---------------File Logistics-------------------#######################
+
 
 ## Have user navigate to desired book and show them what they chose.
 if debug==False:
     print "--Please navigate to the .xlsx file containing your data\n"
-    book_name=chan.getPath(os.getcwd())  #,ext_list=['.xlsx'])
-    print "--You chose to analyze   :"+book_name
+    book_name=chan.getPath(os.getcwd())
+    print "--You chose to analyze: "+book_name
 else:
-    print "debug mode is on"
+    print "--Please navigate to the .xlsx file containing your data\n"
     book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/OneDataStreamNoWeather.xlsx'
-    print book_name+"was chosen for you"
+    print "--You chose to analyze: "+book_name
 
-## Get output book name by adding results and a time stamp to the filename
+
+## Get output book name by adding "results" and a time stamp to the filename
+## 'add_to_filename' adds text to file name without affecting the extension
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
 output_book = pd.ExcelWriter(output_bookname)
-print "--Output to be saved here:"+output_bookname+"."
+print "--Output to be saved here: "+output_bookname
 
 
 ## How many similar days do you want to return?
+print divider+"\n--Now you have to tell me how many days to be used when calculating the band"
+print "For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max"
+default_choice=5
+
 if debug==False:
-    print divider+"\n--Now you have to tell me how many days to be used when calculating the band. \
-    For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max\n"
-    default_choice=5
     num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
 
 else:
-    print "debug mode is on"
-    num_matches=5
-    print "num_matches was set to "+str(num_matches)
-    
+    num_matches=default_choice
+
+
 ## The days to exclude are in a seperate text file
-print divider
-print "Getting list of holidays from text file to exclude them from analysis"
+print divider+"Getting list of holidays from text file to exclude them from analysis"
 exclude_days=wam.get_excluded_days()
 
+
 print divider
 
 
 
 
+##############################---------------Retrieve weather data-------------------#######################
 
-
-
-
-
-
-
+## This spreadsheet is shipped with the program and can be updated and maintaned seperate from the energy usage data
 weather_book_name='program_data/WeatherData.xlsx'
 
 
 ## Get the weather data
-print "Reading in excel data."
-wb = pd.ExcelFile(weather_book_name)
+print "Reading in weather data"
+wbw = pd.ExcelFile(weather_book_name)
 
-## The weather info currently resides on the second tab. Is it better to refer by name or by position!?
-print "Reading in data from first sheet and creating a dataframe."
-weather_interval_dataframe_all=wb.parse(wb.sheet_names[0])
+
+## Weather only has one tab right now that is referred to using the 0 index
+weather_interval_dataframe_all=wbw.parse(wbw.sheet_names[0])
+
 
 print "Duplicating the first column and setting as the index."
 ## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
 weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
 
-##print "Preparing data from for grouping by various time based criteria"
-#### Preparing data from for grouping by various time based criteria
-##
-##
-##
-#####################################################################3
-##
-##
-##
-#### Do something more intelligent than fail when there is not enough data in the weather spreadsheet to properly analyze the
-#### desired date range!!!!!
-##weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
-##
-##
-##
-#######################################################################
-##
-##
-#### Group the data by calendar day via the groupby method.
-##print "Grouping the data by calandar day."
-##weather_daily_grouping=weather_interval_dataframe.groupby('Date')
-##
-#### Create a dataframe from the group by taking the mean for each one.
-##print "Calculating the mean of each group for new dataframe."
-##weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.columns[1]].agg({'Mean' : np.mean})
-##
-#### This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
-#### and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
-#### It adds those results to the data frame and then returns it.
-##print "Getting k 1d nearest neighbors in the average day dataframe."
-##weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
-##
-#### This function takes a df of interval data (multiple readings per day)
-#### and slices it down to the given dates and returns a df representing a single day
-#### with the average weekday, average weekend, peak day, and min day
-##weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
-##
-##
-#### Write to excel
-##weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
-##
 
-
-
-
-
-
-
+##############################---------------Retrieve energy data-------------------#######################
 
 
 wb = pd.ExcelFile(book_name)
 
 
-##-------------- Cue Energy Analysis ----------------------
 print "Reading in energy data"
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
+
 
 print "Getting the number of data columns"
 num_data_cols=len(energy_interval_dataframe_all.columns)-1
 
+
 print "Get list of data streams"
 column_headings=list(energy_interval_dataframe_all.columns)
 dummy=column_headings.pop(0)
+
 
 print "Make timestamp index and first column"
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
@@ -141,48 +111,94 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 
 
 
+##############################-------------Converge on working set of dates----------------#######################
 
-## Get the date range for the performance period (quarter or month usually)
-## In the future this function will check to make sure that the dates given are within the bounds of the data given
-## For both weather and energy usage.
-## These date ranges should be DATES not DATETIMES
+weather_raw_data_start=min(weather_interval_dataframe_all.index)
+weather_raw_data_end=max(weather_interval_dataframe_all.index)
+
+energy_raw_data_start=min(energy_interval_dataframe_all.index)
+enegy_raw_data_min=max(energy_interval_dataframe_all.index)
+
+
+
+weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
+
+weather_group_len=[]
+
+for group in weather_raw_data_group_by_date.groups.iteritems():
+    weather_group_len.append(len(group[1]))
+
+weather_group_average_len=np.sum(weather_group_len)/len(weather_group_len)
+
+## Make the start date the first date that has the correct number of timestamps - it will either be the first day or the second day
+## This method is checking timestamps - it might be more robust to check actual data, then this method would not necessarily
+## produce one of the first two days. It would depend on gaps in the data and what not.
+
+
+weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
+
+weather_group_len=[]
+
+for group in weather_raw_data_group_by_date.groups.iteritems():
+    weather_group_len.append(len(group[1]))
+
+weather_group_average_len=int(round(np.sum(weather_group_len)/len(weather_group_len),0))
+
+
+
+
+energy_raw_data_group_by_date=energy_interval_dataframe_all.groupby('Date')
+
+energy_group_len=[]
+
+for group in energy_raw_data_group_by_date.groups.iteritems():
+    energy_group_len.append(len(group[1]))
+
+energy_group_average_len=np.sum(energy_group_len)/len(energy_group_len)
+
+
+
+
+
+print "The weather data goes from: "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)
+
+print "The energy data timestamps go from: "+str(energy_raw_data_start)+" to "+str(enegy_raw_data_min)
+
+
+
+##Get date range for performance period. The data has already been read in above. The performance period
+## period selection process should be informed by the data so the user doesn't inadvertantly pick dates that won't work
+print "Enter the START DATE and END DATE for the performance period (Usually 1-3 months)"
+
 if debug==False:
-    print "Enter the start and end date for the performance period (The quarter or month usually)."
-    performance_period=wam.get_date_range_from_user()
-    start_date_pp=performance_period[0]
-    end_date_pp=performance_period[1]
+    start_date_pp, end_date_pp = wam.get_date_range_from_user()
 else:
-    start_date_pp=datetime.date(2013,6,1)
-    end_date_pp=datetime.date(2013,8,31)
-    print "2013 Q3 chosen as performance period"
-    
+    start_date_pp,end_date_pp=[datetime.date(2013,6,1), datetime.date(2013,8,31)]
 
-print divider
 
-## Date range for the data to be analysed for band reasons. If you give 2.5 years of data, but want to analyze
-## only two years, say so here! I should give choice to "Use entire data set"
+
+
+## Get date range for analysis period. These dates should also be informed by the data. Defaults should be offered
+## which consist of the end date chosen above and a start date 2 years prior, or as far back as possible if not.
+print divider+"Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
+
 if debug==False:
-    print "Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
-    analysis_period=wam.get_date_range_from_user()
-    start_date_all=analysis_period[0]
-    end_date_all=analysis_period[1]
+    start_date_all, end_date_all=wam.get_date_range_from_user()
 else:
-    print "Chose two years priod to 8/31/13 as analysis period"
-    start_date_all=datetime.date(2011,9,1)
-    end_date_all=datetime.date(2013,8,31)
-
-print divider
+    start_date_all, end_date_all=[datetime.date(2011,9,1), datetime.date(2013,8,31)]
 
 
 
 
 
+## At this point the user should have their desired dates being analyzed and they should work with the data chosen.
+## other wise you have failed. 
 
 
 
 
 
-print "Preparing data from for grouping by various time based criteria"
+print divider+"Preparing data from for grouping by various time based criteria"
 ## Preparing data from for grouping by various time based criteria
 
 

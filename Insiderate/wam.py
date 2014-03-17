@@ -460,7 +460,7 @@ def get_operating_hours_from_user(debug=False):
                 except:
                     print "The time you entered was not in the correct format, or was not a time"
     else:
-        print "debug mode is on for this function. Buckut hours are 6am-6pm"
+        print "debug mode is on for this function. Bucket hours are 6am-6pm"
         bucket_closed_to_open_text='06:00'
         bucket_open_to_closed_text='18:00'
         

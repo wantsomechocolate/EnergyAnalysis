@@ -110,59 +110,68 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 
 
 
-
-##############################-------------Converge on working set of dates----------------#######################
-
-weather_raw_data_start=min(weather_interval_dataframe_all.index)
-weather_raw_data_end=max(weather_interval_dataframe_all.index)
-
-energy_raw_data_start=min(energy_interval_dataframe_all.index)
-enegy_raw_data_min=max(energy_interval_dataframe_all.index)
-
-
-
-weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
-
-weather_group_len=[]
-
-for group in weather_raw_data_group_by_date.groups.iteritems():
-    weather_group_len.append(len(group[1]))
-
-weather_group_average_len=np.sum(weather_group_len)/len(weather_group_len)
-
-## Make the start date the first date that has the correct number of timestamps - it will either be the first day or the second day
-## This method is checking timestamps - it might be more robust to check actual data, then this method would not necessarily
-## produce one of the first two days. It would depend on gaps in the data and what not.
-
-
-weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
-
-weather_group_len=[]
-
-for group in weather_raw_data_group_by_date.groups.iteritems():
-    weather_group_len.append(len(group[1]))
-
-weather_group_average_len=int(round(np.sum(weather_group_len)/len(weather_group_len),0))
-
-
-
-
-energy_raw_data_group_by_date=energy_interval_dataframe_all.groupby('Date')
-
-energy_group_len=[]
-
-for group in energy_raw_data_group_by_date.groups.iteritems():
-    energy_group_len.append(len(group[1]))
-
-energy_group_average_len=np.sum(energy_group_len)/len(energy_group_len)
-
-
-
-
-
-print "The weather data goes from: "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)
-
-print "The energy data timestamps go from: "+str(energy_raw_data_start)+" to "+str(enegy_raw_data_min)
+########
+######################################-------------Converge on working set of dates----------------#######################
+########
+########## Get first and last timestamp of raw weather data set
+########weather_raw_data_start=min(weather_interval_dataframe_all.index)
+########weather_raw_data_end=max(weather_interval_dataframe_all.index)
+########
+########## Get first and last timestamp of raw energy data set
+########energy_raw_data_start=min(energy_interval_dataframe_all.index)
+########enegy_raw_data_min=max(energy_interval_dataframe_all.index)
+########
+########
+########
+########
+########
+########
+########## Get the average group length for all groups.
+########weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
+########
+########weather_group_len=[]
+########
+########for group in weather_raw_data_group_by_date.groups.iteritems():
+########    weather_group_len.append(len(group[1]))
+########
+########weather_group_average_len=int(round(np.sum(weather_group_len)/len(weather_group_len),0))
+########
+########
+########## With the proper length get the first time stamp of the first day with that length
+########
+########
+########
+########
+########weather_daily_dataframe_all=weather_raw_data_group_by_date[weather_interval_dataframe_all.columns[1]].agg({'Mean' : np.mean})
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########## Make the start date the first date that has the correct number of timestamps - it will either be the first day or the second day
+########## This method is checking timestamps - it might be more robust to check actual data, then this method would not necessarily
+########## produce one of the first two days. It would depend on gaps in the data and what not.
+########
+########
+########energy_raw_data_group_by_date=energy_interval_dataframe_all.groupby('Date')
+########
+########energy_group_len=[]
+########
+########for group in energy_raw_data_group_by_date.groups.iteritems():
+########    energy_group_len.append(len(group[1]))
+########
+########energy_group_average_len=int(round(np.sum(energy_group_len)/len(energy_group_len),0))
+########
+########
+########
+########print "The weather data goes from: "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)
+########
+########print "The energy data timestamps go from: "+str(energy_raw_data_start)+" to "+str(enegy_raw_data_min)
 
 
 

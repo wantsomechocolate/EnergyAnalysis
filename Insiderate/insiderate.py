@@ -110,6 +110,9 @@ print "--Make timestamp index and first column"+'\n'
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
 
+
+### THIS STEP IS HUGE, I'm filling in the missing data up to four gaps accross. For example,
+# a gap of ten will turn into a gap of 6.
 energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
 
 
@@ -122,146 +125,91 @@ energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
 ## abort the fill if the na gap is longer than 1 hour, which is what I actually want.
 ## Give the gap breakdown to the user and let them decide. 
 ##newdf.interpolate(limit=4)
+##list of vars
+##exclude_days
+##weather_interval_dataframe_all
+##energy_interval_dataframe_all
 
-start_date_list=[]
-end_date_list=[]
+########start_date_list=[]
+########end_date_list=[]
+########
+########exclude_days_start=min(exclude_days)
+########exclude_days_end=max(exclude_days)
+########exclude_days_elap=exclude_days_end-exclude_days_start
+########exclude_years_elap=round(exclude_days_elap.days/365.0,2)
+########
+########print "--The excluded days go from "+str(exclude_days_start)+" to "+str(exclude_days_end)+" and span about "+str(exclude_years_elap)+" years."+"\n"
+########
+########## Get first and last timestamp of raw weather data set
+########weather_raw_data_start=min(weather_interval_dataframe_all.index)
+########weather_raw_data_end=max(weather_interval_dataframe_all.index)
+########
+########start_date_list.append(weather_raw_data_start)
+########end_date_list.append(weather_raw_data_end)
+########
+########weather_raw_data_days_elap=weather_raw_data_end-weather_raw_data_start
+########weather_raw_data_years_elap=round(weather_raw_data_days_elap.days/365.0,2)
+########
+########print "--The weather data goes from "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)+" and spans about "+str(weather_raw_data_years_elap)+" years."+"\n"
+########
+########
+########
+########## Get first and last timestamp of raw energy data set
+########energy_raw_data_start=min(energy_interval_dataframe_all.index)
+########energy_raw_data_end=max(energy_interval_dataframe_all.index)
+########
+########start_date_list.append(energy_raw_data_start)
+########end_date_list.append(energy_raw_data_end)
+########
+########energy_raw_data_days_elap=energy_raw_data_end-energy_raw_data_start
+########energy_raw_data_years_elap=round(energy_raw_data_days_elap.days/365.0,2)
+########
+########print "--The energy data goes from "+str(energy_raw_data_start)+" to "+str(energy_raw_data_end)+" and spans about "+str(energy_raw_data_years_elap)+" years."+"\n"
+########
+########
+########lower_bound_date=max(start_date_list)
+########lower_bound_index=start_date_list.index(lower_bound_date)
+########upper_bound_date=min(end_date_list)
+########upper_bound_index=end_date_list.index(upper_bound_date)
+########
+########if lower_bound_index==0:
+########    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough weather data to go back farther."+"\n"
+########else:
+########    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough energy data to go back farther."+"\n"
+########
+########
+########if upper_bound_index==0:
+########    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough weather data to go forward."+"\n"
+########else:
+########    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough energy data to go forward."+"\n"
+########    #print "--If you want, I can change the upper bound date to be that of the weather, would you like to do that?"
+########
+########if exclude_days_start<=lower_bound_date.date():
+########    print "--The exlcuded days go back far enough to cover the lower bound date"+"\n"
+########else:
+########    print "--The exlcuded days do not go back far enough to cover the lower bound date, which is "+str(lower_bound_date)+"."+"\n"
+########    print "--You can go add days to the list and rerun, you can ignore this warning, or I can change the lower_bound_date"+"\n"
+########
+########if exclude_days_end>=upper_bound_date.date():
+########    print "--The excluded days go far enough to cover the upper bound date"+"\n"
+########else:
+########    print "--The excluded days do not go far enough to cover the upper bound date, which is "+str(upper_bound_date)+"."+"\n"
+########    print "--I highly recommend going to the holiday list and adding holidays. You can ignore this error (don't do that)"+"\n"
+########    print "--Or I can change the upper bound date to match the upper bound date of the excluded holidays."+"\n"
 
-exclude_days_start=min(exclude_days)
-exclude_days_end=max(exclude_days)
-exclude_days_elap=exclude_days_end-exclude_days_start
-exclude_years_elap=round(exclude_days_elap.days/365.0,2)
+lower_bound_date, upper_bound_date = wam.get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all, energy_interval_dataframe_all)
 
-print "--The excluded days go from "+str(exclude_days_start)+" to "+str(exclude_days_end)+" and span about "+str(exclude_years_elap)+" years."+"\n"
-
-## Get first and last timestamp of raw weather data set
-weather_raw_data_start=min(weather_interval_dataframe_all.index)
-weather_raw_data_end=max(weather_interval_dataframe_all.index)
-
-start_date_list.append(weather_raw_data_start)
-end_date_list.append(weather_raw_data_end)
-
-weather_raw_data_days_elap=weather_raw_data_end-weather_raw_data_start
-weather_raw_data_years_elap=round(weather_raw_data_days_elap.days/365.0,2)
-
-print "--The weather data goes from "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)+" and spans about "+str(weather_raw_data_years_elap)+" years."+"\n"
-
-
-
-## Get first and last timestamp of raw energy data set
-energy_raw_data_start=min(energy_interval_dataframe_all.index)
-energy_raw_data_end=max(energy_interval_dataframe_all.index)
-
-start_date_list.append(energy_raw_data_start)
-end_date_list.append(energy_raw_data_end)
-
-energy_raw_data_days_elap=energy_raw_data_end-energy_raw_data_start
-energy_raw_data_years_elap=round(energy_raw_data_days_elap.days/365.0,2)
-
-print "--The energy data goes from "+str(energy_raw_data_start)+" to "+str(energy_raw_data_end)+" and spans about "+str(energy_raw_data_years_elap)+" years."+"\n"
-
-
-lower_bound_date=max(start_date_list)
-lower_bound_index=start_date_list.index(lower_bound_date)
-upper_bound_date=min(end_date_list)
-upper_bound_index=end_date_list.index(upper_bound_date)
-
-if lower_bound_index==0:
-    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough weather data to go back farther."+"\n"
-else:
-    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough energy data to go back farther."+"\n"
-
-
-if upper_bound_index==0:
-    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough weather data to go forward."+"\n"
-else:
-    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough energy data to go forward."+"\n"
-    #print "--If you want, I can change the upper bound date to be that of the weather, would you like to do that?"
-
-if exclude_days_start<=lower_bound_date.date():
-    print "--The exlcuded days go back far enough to cover the lower bound date"+"\n"
-else:
-    print "--The exlcuded days do not go back far enough to cover the lower bound date, which is "+str(lower_bound_date)+"."+"\n"
-    print "--You can go add days to the list and rerun, you can ignore this warning, or I can change the lower_bound_date"+"\n"
-
-if exclude_days_end>=upper_bound_date.date():
-    print "--The excluded days go far enough to cover the upper bound date"+"\n"
-else:
-    print "--The excluded days do not go far enough to cover the upper bound date, which is "+str(upper_bound_date)+"."+"\n"
-    print "--I highly recommend going to the holiday list and adding holidays. You can ignore this error (don't do that)"+"\n"
-    print "--Or I can change the upper bound date to match the upper bound date of the excluded holidays."+"\n"
-
-
-
-
-########
-########
-########
-########
-########
-########## Get the average group length for all groups.
-########weather_raw_data_group_by_date=weather_interval_dataframe_all.groupby('Date')
-########
-########weather_group_len=[]
-########
-########for group in weather_raw_data_group_by_date.groups.iteritems():
-########    weather_group_len.append(len(group[1]))
-########
-########weather_group_average_len=int(round(np.sum(weather_group_len)/len(weather_group_len),0))
-########
-########
-########## With the proper length get the first time stamp of the first day with that length
-########
-########
-########
-########
-########weather_daily_dataframe_all=weather_raw_data_group_by_date[weather_interval_dataframe_all.columns[1]].agg({'Mean' : np.mean})
-########
-########
-########
-########
-########
-########
-########
-########
-########
-########
-########## Make the start date the first date that has the correct number of timestamps - it will either be the first day or the second day
-########## This method is checking timestamps - it might be more robust to check actual data, then this method would not necessarily
-########## produce one of the first two days. It would depend on gaps in the data and what not.
-########
-########
-########energy_raw_data_group_by_date=energy_interval_dataframe_all.groupby('Date')
-########
-########energy_group_len=[]
-########
-########for group in energy_raw_data_group_by_date.groups.iteritems():
-########    energy_group_len.append(len(group[1]))
-########
-########energy_group_average_len=int(round(np.sum(energy_group_len)/len(energy_group_len),0))
-########
-########
-########
-########print "The weather data goes from: "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)
-########
-########print "The energy data timestamps go from: "+str(energy_raw_data_start)+" to "+str(enegy_raw_data_min)
-
-
-
-##Get date range for performance period. The data has already been read in above. The performance period
-## period selection process should be informed by the data so the user doesn't inadvertantly pick dates that won't work
+## Performance period date range
 print "--Enter the START DATE and END DATE for the performance period (Usually 1-3 months)"+'\n'
 
 if debug==False:
-    ##This function needs to aacept 1,2 more arguments
     start_date_pp, end_date_pp = wam.get_date_range_from_user(lower_bound_date.date(), upper_bound_date.date())
 else:
     start_date_pp,end_date_pp=[datetime.date(2013,6,1), datetime.date(2013,8,31)]
 
 
 
-
-## Get date range for analysis period. These dates should also be informed by the data. Defaults should be offered
-## which consist of the end date chosen above and a start date 2 years prior, or as far back as possible if not.
+## Analysis period date range(1-2 years usually)
 print "--Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"+'\n'
 
 if debug==False:
@@ -270,7 +218,11 @@ else:
     start_date_all, end_date_all=[datetime.date(2011,9,1), datetime.date(2013,8,31)]
 
 
+
 print ""
+
+
+
 
 
 

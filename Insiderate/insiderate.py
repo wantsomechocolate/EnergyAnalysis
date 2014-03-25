@@ -10,6 +10,8 @@ from marbles import glass as chan
 
 ## This allows the program to run completely without user input, or not. 
 debug=True
+
+## This is for cosmetic stuff
 divider="\n---------------------------------------------------------------------------\n"
 
 
@@ -29,38 +31,38 @@ print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)---------
 if debug==False:
     print "--Please navigate to the .xlsx file containing your data\n"
     book_name=chan.getPath(os.getcwd())
-    print "--You chose to analyze: "+book_name
+    print "--You chose to analyze: "+book_name+'\n'
 else:
     print "--Please navigate to the .xlsx file containing your data\n"
-    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/OneDataStreamNoWeather.xlsx'
-    print "--You chose to analyze: "+book_name
+    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
+    print "--You chose to analyze: "+book_name+'\n'
 
 
 ## Get output book name by adding "results" and a time stamp to the filename
 ## 'add_to_filename' adds text to file name without affecting the extension
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
 output_book = pd.ExcelWriter(output_bookname)
-print "--Output to be saved here: "+output_bookname
+print "--Output filepath   : "+output_bookname+'\n'
 
 
 ## How many similar days do you want to return?
-print divider+"\n--Now you have to tell me how many days to be used when calculating the band"
-print "For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max"
+print divider+"\n--Now you have to tell me how many days to be used when calculating the band"+'\n'
+print "----For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max"+'\n'
 default_choice=5
 
 if debug==False:
-    num_matches=chan.getIntegerInput(3,6,"--Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
+    num_matches=chan.getIntegerInput(3,6,"----Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
 
 else:
     num_matches=default_choice
 
+print ""
+
+##############################---------------Retrieve holiday data-------------------#######################
 
 ## The days to exclude are in a seperate text file
-print divider+"Getting list of holidays from text file to exclude them from analysis"
+print "--Getting list of holidays from text file to exclude them from analysis"+divider
 exclude_days=wam.get_excluded_days()
-
-
-print divider
 
 
 
@@ -72,7 +74,7 @@ weather_book_name='program_data/WeatherData.xlsx'
 
 
 ## Get the weather data
-print "Reading in weather data"
+print "--Reading in weather data"+'\n'
 wbw = pd.ExcelFile(weather_book_name)
 
 
@@ -80,7 +82,7 @@ wbw = pd.ExcelFile(weather_book_name)
 weather_interval_dataframe_all=wbw.parse(wbw.sheet_names[0])
 
 
-print "Duplicating the first column and setting as the index."
+print "--Duplicating the first column and setting as the index."+'\n'
 ## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
 weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
 
@@ -91,36 +93,106 @@ weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_inter
 wb = pd.ExcelFile(book_name)
 
 
-print "Reading in energy data"
+print "--Reading in energy data"+'\n'
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
 
-print "Getting the number of data columns"
+print "--Getting the number of data columns"+'\n'
 num_data_cols=len(energy_interval_dataframe_all.columns)-1
 
 
-print "Get list of data streams"
+print "--Get list of data streams"+'\n'
 column_headings=list(energy_interval_dataframe_all.columns)
 dummy=column_headings.pop(0)
 
 
-print "Make timestamp index and first column"
+print "--Make timestamp index and first column"+'\n'
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
 
+energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
 
 
-########
-######################################-------------Converge on working set of dates----------------#######################
-########
-########## Get first and last timestamp of raw weather data set
-########weather_raw_data_start=min(weather_interval_dataframe_all.index)
-########weather_raw_data_end=max(weather_interval_dataframe_all.index)
-########
-########## Get first and last timestamp of raw energy data set
-########energy_raw_data_start=min(energy_interval_dataframe_all.index)
-########enegy_raw_data_min=max(energy_interval_dataframe_all.index)
-########
+
+
+##############################-------------Converge on working set of dates----------------#######################
+
+## filling in missing data
+## This uses a linear fill, and limits the fill to an hour past the start of the missing data. Unfortunately it does not
+## abort the fill if the na gap is longer than 1 hour, which is what I actually want.
+## Give the gap breakdown to the user and let them decide. 
+##newdf.interpolate(limit=4)
+
+start_date_list=[]
+end_date_list=[]
+
+exclude_days_start=min(exclude_days)
+exclude_days_end=max(exclude_days)
+exclude_days_elap=exclude_days_end-exclude_days_start
+exclude_years_elap=round(exclude_days_elap.days/365.0,2)
+
+print "--The excluded days go from "+str(exclude_days_start)+" to "+str(exclude_days_end)+" and span about "+str(exclude_years_elap)+" years."+"\n"
+
+## Get first and last timestamp of raw weather data set
+weather_raw_data_start=min(weather_interval_dataframe_all.index)
+weather_raw_data_end=max(weather_interval_dataframe_all.index)
+
+start_date_list.append(weather_raw_data_start)
+end_date_list.append(weather_raw_data_end)
+
+weather_raw_data_days_elap=weather_raw_data_end-weather_raw_data_start
+weather_raw_data_years_elap=round(weather_raw_data_days_elap.days/365.0,2)
+
+print "--The weather data goes from "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)+" and spans about "+str(weather_raw_data_years_elap)+" years."+"\n"
+
+
+
+## Get first and last timestamp of raw energy data set
+energy_raw_data_start=min(energy_interval_dataframe_all.index)
+energy_raw_data_end=max(energy_interval_dataframe_all.index)
+
+start_date_list.append(energy_raw_data_start)
+end_date_list.append(energy_raw_data_end)
+
+energy_raw_data_days_elap=energy_raw_data_end-energy_raw_data_start
+energy_raw_data_years_elap=round(energy_raw_data_days_elap.days/365.0,2)
+
+print "--The energy data goes from "+str(energy_raw_data_start)+" to "+str(energy_raw_data_end)+" and spans about "+str(energy_raw_data_years_elap)+" years."+"\n"
+
+
+lower_bound_date=max(start_date_list)
+lower_bound_index=start_date_list.index(lower_bound_date)
+upper_bound_date=min(end_date_list)
+upper_bound_index=end_date_list.index(upper_bound_date)
+
+if lower_bound_index==0:
+    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough weather data to go back farther."+"\n"
+else:
+    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough energy data to go back farther."+"\n"
+
+
+if upper_bound_index==0:
+    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough weather data to go forward."+"\n"
+else:
+    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough energy data to go forward."+"\n"
+    #print "--If you want, I can change the upper bound date to be that of the weather, would you like to do that?"
+
+if exclude_days_start<=lower_bound_date.date():
+    print "--The exlcuded days go back far enough to cover the lower bound date"+"\n"
+else:
+    print "--The exlcuded days do not go back far enough to cover the lower bound date, which is "+str(lower_bound_date)+"."+"\n"
+    print "--You can go add days to the list and rerun, you can ignore this warning, or I can change the lower_bound_date"+"\n"
+
+if exclude_days_end>=upper_bound_date.date():
+    print "--The excluded days go far enough to cover the upper bound date"+"\n"
+else:
+    print "--The excluded days do not go far enough to cover the upper bound date, which is "+str(upper_bound_date)+"."+"\n"
+    print "--I highly recommend going to the holiday list and adding holidays. You can ignore this error (don't do that)"+"\n"
+    print "--Or I can change the upper bound date to match the upper bound date of the excluded holidays."+"\n"
+
+
+
+
 ########
 ########
 ########
@@ -177,10 +249,11 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 
 ##Get date range for performance period. The data has already been read in above. The performance period
 ## period selection process should be informed by the data so the user doesn't inadvertantly pick dates that won't work
-print "Enter the START DATE and END DATE for the performance period (Usually 1-3 months)"
+print "--Enter the START DATE and END DATE for the performance period (Usually 1-3 months)"+'\n'
 
 if debug==False:
-    start_date_pp, end_date_pp = wam.get_date_range_from_user()
+    ##This function needs to aacept 1,2 more arguments
+    start_date_pp, end_date_pp = wam.get_date_range_from_user(lower_bound_date.date(), upper_bound_date.date())
 else:
     start_date_pp,end_date_pp=[datetime.date(2013,6,1), datetime.date(2013,8,31)]
 
@@ -189,13 +262,15 @@ else:
 
 ## Get date range for analysis period. These dates should also be informed by the data. Defaults should be offered
 ## which consist of the end date chosen above and a start date 2 years prior, or as far back as possible if not.
-print divider+"Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"
+print "--Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"+'\n'
 
 if debug==False:
-    start_date_all, end_date_all=wam.get_date_range_from_user()
+    start_date_all, end_date_all=wam.get_date_range_from_user(lower_bound_date.date(), upper_bound_date.date())
 else:
     start_date_all, end_date_all=[datetime.date(2011,9,1), datetime.date(2013,8,31)]
 
+
+print ""
 
 
 
@@ -203,88 +278,60 @@ else:
 ## At this point the user should have their desired dates being analyzed and they should work with the data chosen.
 ## other wise you have failed. 
 
+###----------------------------------------The rest--------------------------------------------------------
 
 
 
-
-print divider+"Preparing data from for grouping by various time based criteria"
+print "--Preparing data from for grouping by various time based criteria"+'\n'
 ## Preparing data from for grouping by various time based criteria
 
 
-
-###################################################################3
-
-
-
+#####################################################################
 ## Do something more intelligent than fail when there is not enough data in the weather spreadsheet to properly analyze the
 ## desired date range!!!!!
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
-
-
-
 #####################################################################
 
 
 ## Group the data by calendar day via the groupby method.
-print "Grouping the data by calandar day."
+print "--Grouping the data by calandar day."+'\n'
 weather_daily_grouping=weather_interval_dataframe.groupby('Date')
 
 ## Create a dataframe from the group by taking the mean for each one.
-print "Calculating the mean of each group for new dataframe."
+print "--Calculating the mean of each group for new dataframe."+'\n'
 weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.columns[1]].agg({'Mean' : np.mean})
 
 ## This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
 ## and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
 ## It adds those results to the data frame and then returns it.
-print "Getting k 1d nearest neighbors in the average day dataframe."
+print "--Getting k 1d nearest neighbors in the average day dataframe."+'\n'
 weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
+
+## print wetaher daily dataframe to the excel sheet so we can see the similar days assigned to each day
+print "--Printing similar day data to spreadsheet object"+'\n'
+weather_daily_dataframe.to_excel(output_book,"WBTSimDays")
 
 ## This function takes a df of interval data (multiple readings per day)
 ## and slices it down to the given dates and returns a df representing a single day
 ## with the average weekday, average weekend, peak day, and min day
+print "--Getting the average day metrics for weather in the performance period"+'\n'
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
 ## Write to excel
+print "--Printing weather average day to excel object"+'\n'
 weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-print "Prepare dataframe for grouping by time"
+print "--Preparing dataframe for grouping by time"+'\n'
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
 
 
 
-print "Getting average day profile metrics"
-##df_ave_day_dict={}
-##for item in column_headings:
-##    energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
-##    df_ave_day_dict[item]=energy_average_day_profile_dataframe_pp
 
 ## Getting this right involves making the column names unique for each set. Should be easy
-## Just use the first couple chars of item as column heading. 
+## Just use the first couple chars of item as column heading.
+print "--Getting average day energy profile metrics"+'\n'
 df_ave_day_list=[]
 for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
@@ -296,247 +343,35 @@ else:
     ave_day_stats_pp=df_ave_day_list[0].join(df_ave_day_list[1:], how='outer')
 
 
+print "--Printing ave day stats to excel object."+'\n'
 ave_day_stats_pp.to_excel(output_book,"EnergyAveDay")
 
 
 ##------------------------ Join my Band --------------------------------
 
-print "Grouping interval energy data by date"
-energy_interval_groups_by_date=energy_interval_dataframe.groupby('Date')
-
-## Stats are the band, data are the numbers used to calculate the stats
-energy_interval_band_stats_df_list=[]
-energy_interval_band_data_df_list=[]
-energy_band_stats_by_day_df_list=[]
-
-## for loop starting at index 1 instead of 0
-for data_col in range(1,num_data_cols+1):
-
-    ## Make and empty structure to store interval data by day to then later concatonate it all together
-    list_of_list_of_series=[]
-    for i in range(num_matches):
-        list_of_list_of_series.append([])
-
-
-    band_info_df=pd.DataFrame()
-
-    ## num_matches is determined way in the beginning, it's the number of similar days
-    for col in range(1,num_matches+1):
-        ## Get a column out of the weather daily data frame
-        current_col=weather_daily_dataframe[weather_daily_dataframe.columns[col]]
-        ## for all the dates in the current column
-        for item in current_col:
-            ## Go to the interval data grouped by date and use the date as the index to get the data. 
-            current_group=energy_interval_groups_by_date.get_group(item)
-            ## Get only the data you want from the grouping (depends on data_col)
-            current_series=current_group[current_group.columns[data_col]]
-            ## Add that series to the list of lists!
-            list_of_list_of_series[col-1].append(current_series)
-
-    ## This iterates through the list of lists and uses concat to combine all the series in a
-    ## given list.
-    energy_interval_band_data_df=pd.DataFrame()
-    for i in range(len(list_of_list_of_series)):
-        current_col=pd.concat(list_of_list_of_series[i])
-        energy_interval_band_data_df['Day '+str(i+1)]=current_col.values
-
-    ## Because the analysis was sort of taken out of dataframe land, the index went missing
-    ## Add it back in here
-    energy_interval_band_data_df=energy_interval_band_data_df.set_index(energy_interval_dataframe[energy_interval_dataframe.columns[0]])
-
-
-
-    
-
-
-
-    ## Copy the data frame that consists of the datetime index and the energy data for the similar days
-    energy_interval_band_stats_df=energy_interval_band_data_df.copy(deep=True)
-
-    ## Add the band data to a list, this will be joined by other lists if there is more than one data stream
-    ## I.E elec and steam. I might make this a dictionary at some point and
-    ## print this dfs to their own sheets because they won't be used in any formulas in the supplemental
-    ## spreadsheet but they would be useful to look at. 
-    energy_interval_band_data_df_list.append(energy_interval_band_data_df)
-
-    ## Get a shortened data heading, This could cause problems if two datasreams
-    ## have the same first four letters in there column heading
-    data_heading=str(energy_interval_dataframe.columns[data_col][:4])
-
-
-    ## I wanted to print this data but maybe later
-    energy_interval_band_data_df.to_excel(output_book,data_heading+"-SimDayData")
-
-
-    ## Get the mean of all values in either the stats df or the band df they are the same right now
-    mean=energy_interval_band_stats_df.mean(1)
-    standard_dev=energy_interval_band_stats_df.std(1)
-    variance=standard_dev**2
-
-    ## Add data the actual interval data to the stats df
-    energy_interval_band_stats_df[data_heading]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]].values
-
-    ## Add the three metrics you just got
-    energy_interval_band_stats_df[data_heading+'-Mean']=mean
-    energy_interval_band_stats_df[data_heading+'-StDev']=standard_dev
-    energy_interval_band_stats_df[data_heading+'-Var']=variance
-
-    ## Reset the stats df so that it does not include the band data, that is already stored elsewhere.
-    energy_interval_band_stats_df=energy_interval_band_stats_df.ix[:,num_matches:]
-
-
-
-
-## Above got the stats base on 15 minute data, below is to get the stats by day
-    
-    ## Make another copy of band stats?
-    df=energy_interval_band_stats_df.copy(deep=True)
-    ## Insert the index of the copy as the first column
-    df.insert(0,'DateTimeStamp',df.index)
-    ## Add  a column for the date
-    df['Date']=df[df.columns[0]].apply(wam.datetime2date)
-    ## Group by that column and then aggregate the groups by summation. 
-    energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
-
-
-    
-
-    ## This takes the sum of the variances and square roots it, which gives us the aggregate standard deviation
-    energy_band_stats_by_day_df[data_heading+'-VarRoot']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[-1]].apply(np.sqrt)
-
-    ## Take the var root and add to mean for upper
-    energy_band_stats_by_day_df[data_heading+'-Upper']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]+energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
-
-    ## Subtract from mean for lower
-    energy_band_stats_by_day_df[data_heading+'-Lower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
-    
-    ## Do the same thing for the interval data (but just use the standarad deviation
-    energy_interval_band_stats_df[data_heading+'-Upper']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]+energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
-    energy_interval_band_stats_df[data_heading+'-Lower']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]-energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
-
-    ## Add the interval df to the list to be concatonated later
-    energy_interval_band_stats_df_list.append(energy_interval_band_stats_df)
-
-    ## Add the daily df to the list to be concatonated later
-    energy_band_stats_by_day_df_list.append(energy_band_stats_by_day_df)
-
-## the stats list has one item your are done
-if len(energy_interval_band_stats_df_list)==1:
-    energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0]
-else:  
-    energy_interval_band_stats_df_all=energy_interval_band_stats_df_list[0].join(energy_interval_band_stats_df_list[1:], how='outer')
-
-
-## If they have more than one item then use join and the 'outer' argument for the how parameter to join them by column into one big df
-if len(energy_band_stats_by_day_df_list)==1:
-    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0]
-else:  
-    energy_band_stats_by_day_df_all=energy_band_stats_by_day_df_list[0].join(energy_band_stats_by_day_df_list[1:], how='outer')
+print "--Generating band"+'\n'
+energy_band_stats_by_day_df_all=wam.get_band_data(energy_interval_dataframe, weather_daily_dataframe, num_matches, num_data_cols, output_book)
 
 
 energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
-
 
 
 energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end_date_pp]
 energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
+##--------------------buckets-------------------------------------------------------
 
 
-#------------------------------------------------------------------------
-start_time_for_plotting_average_day=datetime.datetime(2000,1,1,0,0)
-time_range_for_plotting_average_day=[]
-for i in range(96):
-    time_range_for_plotting_average_day.append(start_time_for_plotting_average_day+datetime.timedelta(minutes=15*i))
-#------------------------------------------------------------------------
+print "--Getting bucketed usage"+'\n'
+bucketed_usage_df=wam.bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider)
 
 
-## Bucket analysis
-
-bucketed_usage_all_streams=[]
-
-for data_col in range(1,num_data_cols+1):
-
-    zero_index=data_col-1
-
-## 1.) Find date range for most recent year and take slice from main thing.
-
-## Organize the interval data into a list of lists. Days of hours.
-
-    if debug==False:
-        print "Showing the average weekday, weekend and day with peak for "+ str(column_headings[zero_index])+"."
-        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[0]],'g-')
-        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[1]],'b-')
-        ave_day_plot=pl.plot_date(time_range_for_plotting_average_day,df_ave_day_list[zero_index][df_ave_day_list[zero_index].columns[2]],'r-')
-        pl.show()
-    else:
-        print "Not showing any graphs because debug is on"
-
-    
-    new_df=pd.DataFrame()
-    new_df['Date']=energy_interval_dataframe['Date']
-    new_df[energy_interval_dataframe.columns[data_col]]=energy_interval_dataframe[energy_interval_dataframe.columns[data_col]]
-    groups=new_df.groupby('Date')
-    new_list=list(groups)
-    int_data_by_day=[]
-    for i in range(len(groups)):
-        int_data_by_day.append(list(new_list[i][1][energy_interval_dataframe.columns[data_col]]))
-
-
-    date_list=list(energy_interval_dataframe.groupby('Date').agg(np.sum).index)
-
-    end_date_bucket=end_date_pp
-
-    bucket_date_range=wam.get_bucket_date_range_from_user(end_date=end_date_bucket)
-
-
-    try:
-        start_date_index=date_list.index(bucket_date_range[0])
-    except ValueError:
-        start_date_index=0
-
-    try:
-        end_date_index=date_list.index(bucket_date_range[1])
-    except:
-        end_date_index=-1
-        print "--Something went wrong getting the end date"
-        print "--Defaulting to the last date in list"
-
-
-
-    ## Instead of the open closed bs, as "What time does the building go from closed to open?"
-    ## and "What time does the building go from open to closed?"
-    print divider
-
-
-    bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=debug)
-
-    ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
-    bucket_operating_hours_by_day=[]
-    for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
-        bucket_operating_hours_by_day.append(bucket_open_closed_hours)
-
-    print divider
-    bucketed_usage=wam.get_bucketed_usage(bucket_operating_hours_by_day, date_list, start_date_index, end_date_index, int_data_by_day)
-
-    bucketed_usage_all_streams.append(bucketed_usage)
-
-
-
-bucketed_usage_df=pd.DataFrame()
-bucketed_usage_df['Date']=bucketed_usage_all_streams[0][2]
-
-for i in range(len(bucketed_usage_all_streams)):
-    bucketed_usage_df[energy_interval_dataframe.columns[i+1][:4]+'-Occ']=bucketed_usage_all_streams[i][0]
-    bucketed_usage_df[energy_interval_dataframe.columns[i+1][:4]+'-Unocc']=bucketed_usage_all_streams[i][1]
-
-bucketed_usage_df=bucketed_usage_df.set_index('Date')
-
-
+print "--Printing bucketed usage to excel object"+'\n'
 bucketed_usage_df.to_excel(output_book,"Bucketed Usage")
 
 
+print "--Getting year to date bucketed usage"+'\n'
 bucketed_usage_ytd_df=bucketed_usage_df
 bucketed_usage_ytd_df['Date']=bucketed_usage_df.index
 bucketed_usage_ytd_df['Year']=bucketed_usage_ytd_df['Date'].apply(wam.datetime2year)
@@ -544,25 +379,17 @@ bucketed_usage_groups_by_year=bucketed_usage_ytd_df.groupby('Year')
 bucketed_usage_list_years=list(bucketed_usage_groups_by_year.groups.iterkeys())
 bucketed_usage_max_year=max(bucketed_usage_list_years)
 bucketed_usage_ytd_df=bucketed_usage_groups_by_year.get_group(bucketed_usage_max_year)
-
 bucketed_usage_ytd_df=bucketed_usage_ytd_df.iloc[:,0:len(column_headings)*2]
 
+
+print "--Printing year to date bucketed usage to excel object."+'\n'
 bucketed_usage_ytd_df.to_excel(output_book,"Bucketed Usage YTD")
 
 
-#---------------------------------------------------------------------------------------------
-## LAST THING I NEED TO DO
-## Take the performance period dataframe and group it by month
-## then for every group, get the sum of usage for that month, the peak demand for that month (which I'll already have)
-## And also a new dataframe that is just the peak weak in that month.
 
-## I also need to go in and add up the amount of usage above and below the band for each day?
-## I think I might be using days when I'm supposed to be using weeks?
 
-## Then consider automatically generating those calenders because I can use the excel printer to change color and stuff!
-#---------------------------------------------------------------------------------------------
-
-## Getting monthly usage numbers for all streams. 
+## Getting monthly usage numbers for all streams.
+print "--Calculating monthly usages for energy streams"+'\n'
 column_dict={}
 for i in range(1,len(column_headings)+1):
     column_dict[energy_interval_dataframe.columns[i]]=np.sum
@@ -571,9 +398,6 @@ energy_monthly_dataframe=energy_interval_dataframe.groupby(['Year', 'Month'], so
 energy_monthly_dataframe['YearMonth']=energy_monthly_dataframe['Year']*100+energy_monthly_dataframe['Month']
 energy_monthly_dataframe=energy_monthly_dataframe.sort('YearMonth')
 energy_monthly_dataframe=energy_monthly_dataframe.reset_index()
-
-## Work on formatting this dataframe
-#energy_monthly_dataframe.to_excel(output_book,"Monthly Usage")
 
 
 energy_monthly_df=pd.DataFrame()
@@ -585,22 +409,15 @@ for i in range(len(column_headings)):
 
 energy_monthly_df=energy_monthly_df.set_index(energy_monthly_dataframe['YearMonth'])
 
+print "--Printing monthly vales to excel object"+'\n'
 energy_monthly_df.to_excel(output_book,"Monthly Usage")
 
 
 
-## Get the week surrounding the day with peak for each month in the performance period
-## Psuedo code
-## Get the peformance period interval data. Make sure you don't cut off any readings from the end date. -DONE
-## group the performance period interval by month -DONE
-## iterate through each group (month) and do the following
-## for each data stream in the group, what is the max reading, what is the date of the max reading
-## what day of the week is the max reading, group the df by day and go the appropriate number of days back and forward
-## get the first timestamp from the first day and the last time stamp from the last day and use those to slice out the
-## "Peak week". There will be one for each utility stream and for each month.
-## For each month, output a month1, month2, month3 sheet named as such (not with the actual month, so that links remain intact)
-## and put each util stream in its own column. np.
+##-----------------------------------PEAK WEAK---------------------------------------------------
 
+
+print "--Getting the peak weak in each month in the performance period for all streams"+'\n'
 ## A place to put the results
 ## This will be a list of all streams for all months
 peak_week_all_streams_all_months_list=[]
@@ -634,7 +451,7 @@ for current_month in range(start_month,end_month+1):
     ## I need to get the peak weak for all streams and add it to a list and concatonate it and print it to the
     ## excel file before I can move on to the next month. So close!
 
-    for i in range(1,data_col+1):
+    for i in range(1,num_data_cols+1):
 
         # Get date of max usage
         day_with_max=performance_period_single_month_df[performance_period_single_month_df.columns[i]].idxmax().date()
@@ -670,10 +487,11 @@ for month in range(len(peak_week_all_streams_all_months_list)):
 
     for data_stream in range(len(column_headings)):
 
+        print "--Printing peak weak data to excel object for Month"+str(month+1)+'\n'
         peak_week_all_streams_all_months_list[month][data_stream].to_excel(output_book,"Month"+str(month+1),startcol=(data_stream)*2)
 
 
-
+print "Saving the output book"+'\n'
 output_book.save()
 
 
@@ -687,6 +505,19 @@ output_book.save()
 ## Get the data from that day
 #day_with_max_data=group_by_day.get_group(day_with_max)
 
+
+
+#---------------------------------------------------------------------------------------------
+## LAST THING I NEED TO DO
+## Take the performance period dataframe and group it by month
+## then for every group, get the sum of usage for that month, the peak demand for that month (which I'll already have)
+## And also a new dataframe that is just the peak weak in that month.
+
+## I also need to go in and add up the amount of usage above and below the band for each day?
+## I think I might be using days when I'm supposed to be using weeks?
+
+## Then consider automatically generating those calenders because I can use the excel printer to change color and stuff!
+#---------------------------------------------------------------------------------------------
 
 
 

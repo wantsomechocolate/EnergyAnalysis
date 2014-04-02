@@ -650,7 +650,7 @@ def get_band_data(energy_interval_dataframe_def, weather_daily_dataframe_def, nu
 
 
 
-    ## Above got the stats base on 15 minute data, below is to get the stats by day
+    ## Above got the stats based on 15 minute data, below is to get the stats by day
         
         ## Make another copy of band stats?
         df=energy_interval_band_stats_df.copy(deep=True)
@@ -672,10 +672,28 @@ def get_band_data(energy_interval_dataframe_def, weather_daily_dataframe_def, nu
 
         ## Subtract from mean for lower
         energy_band_stats_by_day_df[data_heading+'-Lower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
+
+
+
+        energy_band_stats_by_day_df[data_heading+'-DiffExpected']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[0]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]
+        energy_band_stats_by_day_df[data_heading+'-DiffLower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[0]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[6]]
+        energy_band_stats_by_day_df[data_heading+'-DiffUpper']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[0]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[5]]
+
+
+
+
+
+        ## This could get confusing, but I used G for green, R for red, B for black. NOT G for good, B for bad. B is not bad, it is regular.
+        energy_band_stats_by_day_df[data_heading+'-RGB']=np.where(energy_band_stats_by_day_df[data_heading]<energy_band_stats_by_day_df[data_heading+'-Lower'],"G",np.where(energy_band_stats_by_day_df[data_heading]>energy_band_stats_by_day_df[data_heading+'-Upper'],"R","B"))
+
+
+
+
         
         ## Do the same thing for the interval data (but just use the standarad deviation
         energy_interval_band_stats_df[data_heading+'-Upper']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]+energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
         energy_interval_band_stats_df[data_heading+'-Lower']=energy_interval_band_stats_df[energy_interval_band_stats_df.columns[1]]-energy_interval_band_stats_df[energy_interval_band_stats_df.columns[2]]
+
 
         ## Add the interval df to the list to be concatonated later
         energy_interval_band_stats_df_list.append(energy_interval_band_stats_df)
@@ -867,6 +885,51 @@ def get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all
 
 
     return [lower_bound_date, upper_bound_date]
+
+
+
+
+
+def get_calendar_from_date(date):
+
+    #fdom=first day of month
+    fdom=datetime.datetime(date.year,date.month,1)
+
+    #fdow is fist day of week (the day of the week that the first of the month is)
+    fdow=fdom.isoweekday()
+
+    #fdonm is first day of next month (To get the number of days in the month manually)
+    fdonm=datetime.datetime(date.year, date.month+1,1)
+
+    ## dim is days in month
+    dim=(fdonm-fdom).days
+
+    ## Initialize the calander shape no more than 7 days a week, at most 6 rows needed. 
+    calander=np.zeros(6*7).reshape((6,7))
+
+    ## for every day of the month
+    for i in range(dim):
+
+        ## Shift the counter by the number of the day of the week of the first day in the month
+        index=i+fdow
+
+        ## find row by dividing by 7 and flooring that bamf
+        row=int(index/7)
+
+        ## get column using the modulus
+        col=index%7
+
+        ## populate the calendar with the day of the month
+        calander[row][col]=i+1
+
+
+    calander_df=pd.DataFrame(calander,[1,2,3,4,5,6],columns=['Sun','Mon','Tue','Wen','Thu','Fri','Sat'])
+
+    return calander_df
+
+
+
+
 
 
 #### This function takes a list of lists and another list of lists and groups the first list based

@@ -6,6 +6,10 @@ import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime, time, os
 from marbles import glass as chan
 
+from openpyxl import Workbook, load_workbook
+from openpyxl.style import Color, Fill
+from openpyxl.cell import Cell
+
 
 
 ## This allows the program to run completely without user input, or not. 
@@ -34,14 +38,19 @@ if debug==False:
     print "--You chose to analyze: "+book_name+'\n'
 else:
     print "--Please navigate to the .xlsx file containing your data\n"
-    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
+    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/TwoColumnInput.xlsx'
     print "--You chose to analyze: "+book_name+'\n'
 
 
 ## Get output book name by adding "results" and a time stamp to the filename
 ## 'add_to_filename' adds text to file name without affecting the extension
+
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
 output_book = pd.ExcelWriter(output_bookname)
+
+output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_list[0])))
+
+
 print "--Output filepath   : "+output_bookname+'\n'
 
 
@@ -113,7 +122,7 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 
 ### THIS STEP IS HUGE, I'm filling in the missing data up to four gaps accross. For example,
 # a gap of ten will turn into a gap of 6.
-energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
+#energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
 
 
 
@@ -299,7 +308,7 @@ print "--Printing ave day stats to excel object."+'\n'
 ave_day_stats_pp.to_excel(output_book,"EnergyAveDay")
 
 
-##------------------------ Join my Band --------------------------------
+##------------------------ BAND --------------------------------
 
 print "--Generating band"+'\n'
 energy_band_stats_by_day_df_all=wam.get_band_data(energy_interval_dataframe, weather_daily_dataframe, num_matches, num_data_cols, output_book)
@@ -312,7 +321,12 @@ energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end
 energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
-##--------------------buckets-------------------------------------------------------
+
+
+
+
+
+##--------------------BUCKETS-------------------------------------------------------
 
 
 print "--Getting bucketed usage"+'\n'
@@ -368,6 +382,7 @@ energy_monthly_df.to_excel(output_book,"Monthly Usage")
 
 ##-----------------------------------PEAK WEAK---------------------------------------------------
 
+## Change so that peak week is all put on the same tab. There is no need to have a tab for each month!?!?!?
 
 print "--Getting the peak weak in each month in the performance period for all streams"+'\n'
 ## A place to put the results
@@ -390,6 +405,7 @@ energy_interval_dataframe_pp=energy_interval_dataframe[start_timestamp: end_time
 
 ## Take that and group it by month because we're finding the peak day and surrounding week for each month in the pp
 performance_period_group_by_month=energy_interval_dataframe_pp.groupby('Month')
+
 
 ## for every month in the performance period. 
 for current_month in range(start_month,end_month+1):
@@ -443,8 +459,85 @@ for month in range(len(peak_week_all_streams_all_months_list)):
         peak_week_all_streams_all_months_list[month][data_stream].to_excel(output_book,"Month"+str(month+1),startcol=(data_stream)*2)
 
 
-print "Saving the output book"+'\n'
+print "--Saving the output book"+'\n'
 output_book.save()
+output_book.close()#?
+
+
+
+
+
+
+
+##-----------------------------------CALANDERS---------------------------------------------------
+output_calendar = pd.ExcelWriter(output_calendar_name)
+
+print "--Printing the calendars to excel in a different book"+'\n'
+
+calendar_tab="Calendars"
+col_offset_start=3
+row_offset_start=3
+
+row_offset=4
+col_offset=col_offset_start
+row_delta=8
+col_delta=9
+
+for heading in column_headings:
+    header=pd.DataFrame([heading])
+    header.to_excel(output_calendar, calendar_tab, startcol=col_offset)
+    col_offset=col_offset+col_delta
+
+col_offset=col_offset_start
+
+elaps_month=(end_timestamp.year*12+end_timestamp.month)-(start_timestamp.year*12+start_timestamp.month)+1
+
+## This wont handle periods that go across the year boundary
+current_date=start_timestamp.date()
+for month in range(elaps_month):
+
+    month_marker=pd.DataFrame([current_date])
+    month_marker.to_excel(output_calendar, calendar_tab, startrow=row_offset)
+    
+    calendar_df=wam.get_calendar_from_date(current_date)
+    
+    current_date=datetime.datetime(current_date.year,current_date.month+1,1)
+
+    for data_col in range(num_data_cols):
+        calendar_df.to_excel(output_calendar, calendar_tab, startrow=row_offset, startcol=col_offset)
+        col_offset=col_offset+col_delta
+
+    col_offset=col_offset_start
+    
+    row_offset=row_offset+row_delta
+
+print "--Savings and closing calendar sheet"
+output_calendar.save()
+output_calendar.close()
+
+print "--Opening calendar sheet with formatter"
+wb=load_workbook(output_calendar.path)
+
+
+
+
+
+
+
+#reopen book
+#get the tab with the calendars
+#use offset plus whatever to get to 0,0 of calendar then use day of week of first day of month to get the first
+#cell you'll be coloring. 
+
+
+
+
+
+## Change so that peak week is all put on the same tab. There is no need to have a tab for each month!?!?!?
+
+
+
+    
 
 
 ## Find the max temp and get the date of the corresponding datetime index
@@ -486,6 +579,4 @@ output_book.save()
 ## Full days of data missing
 
 ## Missing timestamps. 
-
-
 

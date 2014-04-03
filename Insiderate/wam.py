@@ -684,7 +684,7 @@ def get_band_data(energy_interval_dataframe_def, weather_daily_dataframe_def, nu
 
 
         ## This could get confusing, but I used G for green, R for red, B for black. NOT G for good, B for bad. B is not bad, it is regular.
-        energy_band_stats_by_day_df[data_heading+'-RGB']=np.where(energy_band_stats_by_day_df[data_heading]<energy_band_stats_by_day_df[data_heading+'-Lower'],"G",np.where(energy_band_stats_by_day_df[data_heading]>energy_band_stats_by_day_df[data_heading+'-Upper'],"R","B"))
+        energy_band_stats_by_day_df[data_heading+'-RGB']=np.where(energy_band_stats_by_day_df[data_heading]<energy_band_stats_by_day_df[data_heading+'-Lower'],-1,np.where(energy_band_stats_by_day_df[data_heading]>energy_band_stats_by_day_df[data_heading+'-Upper'],1,0))
 
 
 

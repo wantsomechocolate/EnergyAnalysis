@@ -511,15 +511,20 @@ for month in range(elaps_month):
     
     row_offset=row_offset+row_delta
 
-print "--Savings and closing calendar sheet"
+print "--Savings and closing calendar sheet"+'\n'
 output_calendar.save()
 output_calendar.close()
 
-print "--Opening calendar sheet with formatter"
+print "--Opening calendar sheet with formatter"+'\n'
 wb=load_workbook(output_calendar.path)
 
 
 
+band_info_df=pd.DataFrame(energy_band_stats_by_day_df_pp[column_headings[0][:4]+'-RGB'])
+
+band_info_df.insert(0,"Date",band_info_df.index)
+band_info_df['Month']=band_info_df[band_info_df.columns[0]].apply(wam.datetime2month)
+band_info_groups=band_info_df.groupby('Month')
 
 
 

@@ -478,7 +478,7 @@ calendar_tab="Calendars"
 col_offset_start=3
 row_offset_start=3
 
-row_offset=4
+row_offset=row_offset_start
 col_offset=col_offset_start
 row_delta=8
 col_delta=9
@@ -517,17 +517,111 @@ output_calendar.close()
 
 print "--Opening calendar sheet with formatter"+'\n'
 wb=load_workbook(output_calendar.path)
-
-
+ws=wb.get_sheet_by_name(calendar_tab)
 
 band_info_df=pd.DataFrame(energy_band_stats_by_day_df_pp[column_headings[0][:4]+'-RGB'])
 
 band_info_df.insert(0,"Date",band_info_df.index)
-band_info_df['Month']=band_info_df[band_info_df.columns[0]].apply(wam.datetime2month)
+band_info_df['Month']=band_info_df[band_info_df.columns[0]].apply(wam.datetime2fdom)
 band_info_groups=band_info_df.groupby('Month')
 
 
 
+
+start_date=start_timestamp.date()
+
+Color.CGGREEN='8BBE2F'
+Color.CGRED='D63E29'
+Color.CGGREY='605650'
+Color.CGBKGD='F2F2F2'
+
+
+for i in range(num_data_cols):
+
+    current_date=start_date
+    
+    for j in range(elaps_month):
+
+        fdonm=datetime.date(current_date.year, current_date.month+1,1)
+        
+        dim=(fdonm-current_date).days
+        
+        fdow=current_date.isoweekday()
+
+        group_data=band_info_groups.get_group(current_date)
+
+        for k in range(dim):
+            
+            #band_info_groups.get_group(current_date)
+            
+            index=k+fdow
+            
+            row=(int(index/7))+row_offset_start+(row_delta*j)+1
+
+            col=(index%7)+col_offset_start+(col_delta*i)+1
+
+            c=ws.cell(row=row, column=col)
+
+##            c.style.fill.fill_type=Fill.FILL_SOLID
+##            c.style.fill.start_color.index = Color.CGBKGD
+##            if c.value==0:
+##                c.value=""
+##            else:
+##                pass
+            
+            color=group_data[group_data.columns[1]][k]
+            
+            if color==-1:
+                c.style.font.color.index = Color.CGGREEN
+                
+            elif color==1:
+                c.style.font.color.index = Color.CGRED
+                
+            else:
+                c.style.font.color.index = Color.CGGREY
+
+        current_date=datetime.date(current_date.year,current_date.month+1,1)
+
+
+
+
+
+
+#row_offset_start=3
+#col_offset_start=3
+
+
+for i in range(num_data_cols):
+
+    current_date=start_date
+    
+    for j in range(elaps_month):
+
+        for k in range(42):
+            
+            index=k
+            
+            row=(int(index/7))+row_offset_start+(row_delta*j)+1
+
+            col=(index%7)+col_offset_start+(col_delta*i)+1
+
+            c=ws.cell(row=row, column=col)
+
+            c.style.fill.fill_type=Fill.FILL_SOLID
+            c.style.fill.start_color.index = Color.CGBKGD
+            c.style.font.name='Century Gothic'
+            c.style.font.size=8
+            if c.value==0:
+                c.value=""
+            else:
+                pass
+
+
+wb.save(output_calendar.path)
+
+
+
+#start_month=start_timestamp.month
 
 #reopen book
 #get the tab with the calendars

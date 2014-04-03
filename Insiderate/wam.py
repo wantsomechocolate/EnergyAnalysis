@@ -201,6 +201,10 @@ def datetime2month(datetime):
 def datetime2year(datetime):
     return datetime.year
 
+def datetime2fdom(datetime_def):
+    temp=datetime.date(datetime_def.year,datetime_def.month,1)
+    return temp
+
 
 
 ## I didn't know how to pass a function with variables to the agg operator so

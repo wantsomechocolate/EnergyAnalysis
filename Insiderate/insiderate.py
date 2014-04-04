@@ -55,7 +55,7 @@ print "--Output filepath   : "+output_bookname+'\n'
 
 
 ## How many similar days do you want to return?
-print divider+"\n--Now you have to tell me how many days to be used when calculating the band"+'\n'
+print divider+'\n'+"--Now you have to tell me how many days to be used when calculating the band"+'\n'
 print "----For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max"+'\n'
 default_choice=5
 
@@ -65,7 +65,6 @@ if debug==False:
 else:
     num_matches=default_choice
 
-print ""
 
 ##############################---------------Retrieve holiday data-------------------#######################
 
@@ -119,92 +118,16 @@ print "--Make timestamp index and first column"+'\n'
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
 
+##############################---------------FILL GAPS-------------------#######################
 
 ### THIS STEP IS HUGE, I'm filling in the missing data up to four gaps accross. For example,
-# a gap of ten will turn into a gap of 6.
+# a gap of ten will turn into a gap of 6. This uses a linear fill.
 #energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
 
 
 
 
-##############################-------------Converge on working set of dates----------------#######################
-
-## filling in missing data
-## This uses a linear fill, and limits the fill to an hour past the start of the missing data. Unfortunately it does not
-## abort the fill if the na gap is longer than 1 hour, which is what I actually want.
-## Give the gap breakdown to the user and let them decide. 
-##newdf.interpolate(limit=4)
-##list of vars
-##exclude_days
-##weather_interval_dataframe_all
-##energy_interval_dataframe_all
-
-########start_date_list=[]
-########end_date_list=[]
-########
-########exclude_days_start=min(exclude_days)
-########exclude_days_end=max(exclude_days)
-########exclude_days_elap=exclude_days_end-exclude_days_start
-########exclude_years_elap=round(exclude_days_elap.days/365.0,2)
-########
-########print "--The excluded days go from "+str(exclude_days_start)+" to "+str(exclude_days_end)+" and span about "+str(exclude_years_elap)+" years."+"\n"
-########
-########## Get first and last timestamp of raw weather data set
-########weather_raw_data_start=min(weather_interval_dataframe_all.index)
-########weather_raw_data_end=max(weather_interval_dataframe_all.index)
-########
-########start_date_list.append(weather_raw_data_start)
-########end_date_list.append(weather_raw_data_end)
-########
-########weather_raw_data_days_elap=weather_raw_data_end-weather_raw_data_start
-########weather_raw_data_years_elap=round(weather_raw_data_days_elap.days/365.0,2)
-########
-########print "--The weather data goes from "+str(weather_raw_data_start)+" to "+str(weather_raw_data_end)+" and spans about "+str(weather_raw_data_years_elap)+" years."+"\n"
-########
-########
-########
-########## Get first and last timestamp of raw energy data set
-########energy_raw_data_start=min(energy_interval_dataframe_all.index)
-########energy_raw_data_end=max(energy_interval_dataframe_all.index)
-########
-########start_date_list.append(energy_raw_data_start)
-########end_date_list.append(energy_raw_data_end)
-########
-########energy_raw_data_days_elap=energy_raw_data_end-energy_raw_data_start
-########energy_raw_data_years_elap=round(energy_raw_data_days_elap.days/365.0,2)
-########
-########print "--The energy data goes from "+str(energy_raw_data_start)+" to "+str(energy_raw_data_end)+" and spans about "+str(energy_raw_data_years_elap)+" years."+"\n"
-########
-########
-########lower_bound_date=max(start_date_list)
-########lower_bound_index=start_date_list.index(lower_bound_date)
-########upper_bound_date=min(end_date_list)
-########upper_bound_index=end_date_list.index(upper_bound_date)
-########
-########if lower_bound_index==0:
-########    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough weather data to go back farther."+"\n"
-########else:
-########    print "--The oldest date you can use is "+str(lower_bound_date)+" because you don't have enough energy data to go back farther."+"\n"
-########
-########
-########if upper_bound_index==0:
-########    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough weather data to go forward."+"\n"
-########else:
-########    print "--The newest date you can use is "+str(upper_bound_date)+" because you don't have enough energy data to go forward."+"\n"
-########    #print "--If you want, I can change the upper bound date to be that of the weather, would you like to do that?"
-########
-########if exclude_days_start<=lower_bound_date.date():
-########    print "--The exlcuded days go back far enough to cover the lower bound date"+"\n"
-########else:
-########    print "--The exlcuded days do not go back far enough to cover the lower bound date, which is "+str(lower_bound_date)+"."+"\n"
-########    print "--You can go add days to the list and rerun, you can ignore this warning, or I can change the lower_bound_date"+"\n"
-########
-########if exclude_days_end>=upper_bound_date.date():
-########    print "--The excluded days go far enough to cover the upper bound date"+"\n"
-########else:
-########    print "--The excluded days do not go far enough to cover the upper bound date, which is "+str(upper_bound_date)+"."+"\n"
-########    print "--I highly recommend going to the holiday list and adding holidays. You can ignore this error (don't do that)"+"\n"
-########    print "--Or I can change the upper bound date to match the upper bound date of the excluded holidays."+"\n"
+##############################-------CONVERGE ON WORKING SET OF DATES---------#######################
 
 lower_bound_date, upper_bound_date = wam.get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all, energy_interval_dataframe_all)
 
@@ -217,7 +140,6 @@ else:
     start_date_pp,end_date_pp=[datetime.date(2013,6,1), datetime.date(2013,8,31)]
 
 
-
 ## Analysis period date range(1-2 years usually)
 print "--Enter the date range for the analysis period. Should hopefully be at least a year, Preferably two"+'\n'
 
@@ -227,31 +149,26 @@ else:
     start_date_all, end_date_all=[datetime.date(2011,9,1), datetime.date(2013,8,31)]
 
 
-
-print ""
-
-
-
-
-
-
-
 ## At this point the user should have their desired dates being analyzed and they should work with the data chosen.
 ## other wise you have failed. 
 
-###----------------------------------------The rest--------------------------------------------------------
+
+summary_metric_headings=["Analysis Period Start","Analysis Period End","Performance Period Start","Performance Period End"]
+summary_metric_data=[start_date_all,end_date_all,start_date_pp,end_date_pp]
+summary_metric_df=pd.DataFrame(summary_metric_data, summary_metric_headings)
+
+summary_metric_df.to_excel(output_book,"Summary Metrics")
 
 
+
+##############################-------ANALYZING THE WEATHER---------#######################
 
 print "--Preparing data from for grouping by various time based criteria"+'\n'
 ## Preparing data from for grouping by various time based criteria
 
-
-#####################################################################
-## Do something more intelligent than fail when there is not enough data in the weather spreadsheet to properly analyze the
-## desired date range!!!!!
+## Slices the weather dataframe down to the analysis period and do some other stuff to make it easier to group by
+## various time based metrics
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
-#####################################################################
 
 
 ## Group the data by calendar day via the groupby method.
@@ -279,9 +196,12 @@ print "--Getting the average day metrics for weather in the performance period"+
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
 
-## Write to excel
+## Write to excel object
 print "--Printing weather average day to excel object"+'\n'
 weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
+
+
+##############################-------ENERGY AVERAGE DAY STATS---------#######################
 
 
 print "--Preparing dataframe for grouping by time"+'\n'
@@ -308,7 +228,8 @@ print "--Printing ave day stats to excel object."+'\n'
 ave_day_stats_pp.to_excel(output_book,"EnergyAveDay")
 
 
-##------------------------ BAND --------------------------------
+
+##--------------------- BAND OF EXPECTED USE BASED ON SIMILAR WEATHER USAGE-----------------------------
 
 print "--Generating band"+'\n'
 energy_band_stats_by_day_df_all=wam.get_band_data(energy_interval_dataframe, weather_daily_dataframe, num_matches, num_data_cols, output_book)
@@ -326,7 +247,7 @@ energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
 
-##--------------------BUCKETS-------------------------------------------------------
+##--------------------PUT USAGE IN BUCKETS DEPENDING WHEN IT OCCURED AND ITS VOLITILITY-------------------
 
 
 print "--Getting bucketed usage"+'\n'
@@ -380,7 +301,7 @@ energy_monthly_df.to_excel(output_book,"Monthly Usage")
 
 
 
-##-----------------------------------PEAK WEAK---------------------------------------------------
+##------------------FIND THE PEAK WEAK FOR EACH MONTH IN PERFORMANCE PERIOD-------------------------
 
 ## Change so that peak week is all put on the same tab. There is no need to have a tab for each month!?!?!?
 
@@ -405,6 +326,7 @@ energy_interval_dataframe_pp=energy_interval_dataframe[start_timestamp: end_time
 
 ## Take that and group it by month because we're finding the peak day and surrounding week for each month in the pp
 performance_period_group_by_month=energy_interval_dataframe_pp.groupby('Month')
+
 
 
 ## for every month in the performance period. 
@@ -450,13 +372,16 @@ for current_month in range(start_month,end_month+1):
 
     peak_week_all_streams_all_months_list.append(peak_week_all_streams_list)
 
+peak_week_tab="Peak Week"
+peak_week_row_delta=700
+peak_week_col_delta=2
     
 for month in range(len(peak_week_all_streams_all_months_list)):
 
     for data_stream in range(len(column_headings)):
 
         print "--Printing peak weak data to excel object for Month"+str(month+1)+'\n'
-        peak_week_all_streams_all_months_list[month][data_stream].to_excel(output_book,"Month"+str(month+1),startcol=(data_stream)*2)
+        peak_week_all_streams_all_months_list[month][data_stream].to_excel(output_book,peak_week_tab,startcol=(data_stream)*peak_week_col_delta,startrow=month*peak_week_row_delta)
 
 
 print "--Saving the output book"+'\n'
@@ -535,7 +460,6 @@ Color.CGRED='D63E29'
 Color.CGGREY='605650'
 Color.CGBKGD='F2F2F2'
 
-
 for i in range(num_data_cols):
 
     current_date=start_date
@@ -552,8 +476,6 @@ for i in range(num_data_cols):
 
         for k in range(dim):
             
-            #band_info_groups.get_group(current_date)
-            
             index=k+fdow
             
             row=(int(index/7))+row_offset_start+(row_delta*j)+1
@@ -561,13 +483,6 @@ for i in range(num_data_cols):
             col=(index%7)+col_offset_start+(col_delta*i)+1
 
             c=ws.cell(row=row, column=col)
-
-##            c.style.fill.fill_type=Fill.FILL_SOLID
-##            c.style.fill.start_color.index = Color.CGBKGD
-##            if c.value==0:
-##                c.value=""
-##            else:
-##                pass
             
             color=group_data[group_data.columns[1]][k]
             
@@ -581,14 +496,6 @@ for i in range(num_data_cols):
                 c.style.font.color.index = Color.CGGREY
 
         current_date=datetime.date(current_date.year,current_date.month+1,1)
-
-
-
-
-
-
-#row_offset_start=3
-#col_offset_start=3
 
 
 for i in range(num_data_cols):
@@ -610,58 +517,28 @@ for i in range(num_data_cols):
             c.style.fill.fill_type=Fill.FILL_SOLID
             c.style.fill.start_color.index = Color.CGBKGD
             c.style.font.name='Century Gothic'
-            c.style.font.size=8
+            c.style.font.size=10
             if c.value==0:
                 c.value=""
             else:
                 pass
 
-
+print "--Saving the calendar workbook"+'\n'
 wb.save(output_calendar.path)
 
 
-
-#start_month=start_timestamp.month
-
-#reopen book
-#get the tab with the calendars
-#use offset plus whatever to get to 0,0 of calendar then use day of week of first day of month to get the first
-#cell you'll be coloring. 
-
-
-
-
-
-## Change so that peak week is all put on the same tab. There is no need to have a tab for each month!?!?!?
-
-
-
-    
-
-
-## Find the max temp and get the date of the corresponding datetime index
-#day_with_max=df[df.columns[1]].idxmax().date()
-
-#day_with_max.isoweekday()
-#number of day back, then 7-numberofday-1 forward to get the surrounding week. Remember this has to be done on a monthly basis so I first
-#would have to group by month which I do above, but I need the interval data, blah blah blah within reach.
-
-## Get the data from that day
-#day_with_max_data=group_by_day.get_group(day_with_max)
-
+if debug==True:
+    pass
+else:
+    byebye=raw_input("Completed successfully, press enter to exit")
 
 
 #---------------------------------------------------------------------------------------------
 ## LAST THING I NEED TO DO
-## Take the performance period dataframe and group it by month
-## then for every group, get the sum of usage for that month, the peak demand for that month (which I'll already have)
-## And also a new dataframe that is just the peak weak in that month.
-
+## Peak Demand in months
 ## I also need to go in and add up the amount of usage above and below the band for each day?
-## I think I might be using days when I'm supposed to be using weeks?
+## Get days above and days below biand
 
-## Then consider automatically generating those calenders because I can use the excel printer to change color and stuff!
-#---------------------------------------------------------------------------------------------
 
 
 

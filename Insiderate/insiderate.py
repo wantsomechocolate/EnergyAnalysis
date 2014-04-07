@@ -578,7 +578,12 @@ for i in range(num_data_cols):
 
     good_bad_days_all.append(good_bad_days_months)
 
-good_bad_days_all_df=pd.DataFrame(good_bad_days_all).transpose()
+good_bad_days_all_df_inter=pd.DataFrame(good_bad_days_all).transpose()
+
+good_bad_days_all_df=pd.DataFrame()
+for col in good_bad_days_all_df_inter:
+	good_bad_days_all_df[col]=good_bad_days_all_df_inter[col].apply(str)
+
 ## good bad_days_all contains one item per stream, the item contains as many items as months in the performance period
 ## each of those items contain two number, one for good days and one for bad days. 
 
@@ -614,10 +619,10 @@ wb.save(output_calendar.path)
 
 
 ## creating the summary metric dataframe
-##column_offset=4
-##summary_metrics_all_tab="Summary Metrics"
-##summary_metrics_all_df=pd.concat([start_stop_list_all_df,energy_band_performance_metrics_all_df, good_bad_days_all_df])
-##summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=column_offset)
+column_offset=4
+summary_metrics_all_tab="Summary Metrics"
+summary_metrics_all_df=pd.concat([start_stop_list_all_df,energy_band_performance_metrics_all_df, good_bad_days_all_df],ignore_index=True)
+summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=column_offset)
 
 
 
@@ -631,7 +636,6 @@ if debug==True:
 else:
     byebye=raw_input("--Completed successfully, press enter to exit")
 
-print ""
 
 
 

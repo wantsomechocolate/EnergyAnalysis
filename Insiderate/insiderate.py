@@ -254,11 +254,12 @@ for heading in column_headings:
     middle_bound_percentage=middle_bound/actual
     upper_bound_percentage=upper_bound/actual
 
-    energy_band_performance_metrics=[lower_bound_percentage, middle_bound_percentage, lower_bound_percentage]
+    energy_band_performance_metrics=[lower_bound_percentage, middle_bound_percentage, upper_bound_percentage]
     energy_band_performance_metrics_all.append(energy_band_performance_metrics)
+    
 
 ## make df transpose, add to overall metrics print to thing.
-    
+energy_band_performance_metrics_all_df=pd.DataFrame(energy_band_performance_metrics_all).transpose()
 
 
 
@@ -268,6 +269,16 @@ for heading in column_headings:
 
 print "--Getting bucketed usage"+'\n'
 bucketed_usage_df, start_stop_list_all=wam.bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider)
+# start stop list all is a list with one entry for each stream, the entry containing two dates (start and stop)
+
+
+start_stop_list_all_df=pd.DataFrame()
+for item in start_stop_list_all:
+    temp_df=pd.DataFrame(item)
+    start_stop_list_all_df=pd.concat([start_stop_list_all_df,temp_df],ignore_index=True)
+
+
+start_stop_list_all_df=start_stop_list_all_df.transpose()
 
 
 print "--Printing bucketed usage to excel object"+'\n'
@@ -398,14 +409,6 @@ for month in range(len(peak_week_all_streams_all_months_list)):
 
         print "--Printing peak weak data to excel object for Month"+str(month+1)+'\n'
         peak_week_all_streams_all_months_list[month][data_stream].to_excel(output_book,peak_week_tab,startcol=(data_stream)*peak_week_col_delta,startrow=month*peak_week_row_delta)
-
-
-print "--Saving the output book"+'\n'
-output_book.save()
-output_book.close()#?
-
-
-
 
 
 
@@ -575,6 +578,9 @@ for i in range(num_data_cols):
 
     good_bad_days_all.append(good_bad_days_months)
 
+good_bad_days_all_df=pd.DataFrame(good_bad_days_all).transpose()
+## good bad_days_all contains one item per stream, the item contains as many items as months in the performance period
+## each of those items contain two number, one for good days and one for bad days. 
 
 ## This just turns all the backgrounds grey in the cells for the calendar and changed the font size and stuff. 
 for i in range(num_data_cols):
@@ -606,12 +612,29 @@ print "--Saving the calendar workbook"+'\n'
 wb.save(output_calendar.path)
 
 
+
+## creating the summary metric dataframe
+##column_offset=4
+##summary_metrics_all_tab="Summary Metrics"
+##summary_metrics_all_df=pd.concat([start_stop_list_all_df,energy_band_performance_metrics_all_df, good_bad_days_all_df])
+##summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=column_offset)
+
+
+
+print "--Saving the results book"+'\n'
+output_book.save()
+output_book.close()
+
+
 if debug==True:
     pass
 else:
     byebye=raw_input("--Completed successfully, press enter to exit")
 
 print ""
+
+
+
 
 
 #---------------------------------------------------------------------------------------------

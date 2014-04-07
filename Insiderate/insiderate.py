@@ -241,8 +241,24 @@ energy_band_stats_by_day_df_all.to_excel(output_book,"BandData")
 energy_band_stats_by_day_df_pp=energy_band_stats_by_day_df_all[start_date_pp:end_date_pp]
 energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
+energy_band_performance_metrics_all=[]
+for heading in column_headings:
+    
+    header=heading[0:4]
+    lower_bound=energy_band_stats_by_day_df_pp[header+'-DiffLower'].sum()
+    middle_bound=energy_band_stats_by_day_df_pp[header+'-DiffExpected'].sum()
+    upper_bound=energy_band_stats_by_day_df_pp[header+'-DiffUpper'].sum()
+    actual=energy_band_stats_by_day_df_pp[header].sum()
 
+    lower_bound_percentage=lower_bound/actual
+    middle_bound_percentage=middle_bound/actual
+    upper_bound_percentage=upper_bound/actual
 
+    energy_band_performance_metrics=[lower_bound_percentage, middle_bound_percentage, lower_bound_percentage]
+    energy_band_performance_metrics_all.append(energy_band_performance_metrics)
+
+## make df transpose, add to overall metrics print to thing.
+    
 
 
 
@@ -251,7 +267,7 @@ energy_band_stats_by_day_df_pp.to_excel(output_book,"BandDataPP")
 
 
 print "--Getting bucketed usage"+'\n'
-bucketed_usage_df=wam.bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider)
+bucketed_usage_df, start_stop_list_all=wam.bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider)
 
 
 print "--Printing bucketed usage to excel object"+'\n'
@@ -395,19 +411,25 @@ output_book.close()#?
 
 
 ##-----------------------------------CALANDERS---------------------------------------------------
+## output tab
 output_calendar = pd.ExcelWriter(output_calendar_name)
 
 print "--Printing the calendars to excel in a different book"+'\n'
 
 calendar_tab="Calendars"
+
+#where does the calendar start on the sheet
 col_offset_start=3
 row_offset_start=3
 
 row_offset=row_offset_start
 col_offset=col_offset_start
+
+# how many rows/cols to skip after each calendar
 row_delta=8
 col_delta=9
 
+# for each data stream print the name of it to the tab
 for heading in column_headings:
     header=pd.DataFrame([heading])
     header.to_excel(output_calendar, calendar_tab, startcol=col_offset)
@@ -415,64 +437,115 @@ for heading in column_headings:
 
 col_offset=col_offset_start
 
+# How many calendars to print for each stream
 elaps_month=(end_timestamp.year*12+end_timestamp.month)-(start_timestamp.year*12+start_timestamp.month)+1
 
+
 ## This wont handle periods that go across the year boundary
+
+# get first month in performance period
 current_date=start_timestamp.date()
+
+# for each month in the performance period
 for month in range(elaps_month):
 
+    ## prepare to print the month to so the calendars aren't unlabeled. 
     month_marker=pd.DataFrame([current_date])
-    month_marker.to_excel(output_calendar, calendar_tab, startrow=row_offset)
-    
-    calendar_df=wam.get_calendar_from_date(current_date)
-    
-    current_date=datetime.datetime(current_date.year,current_date.month+1,1)
 
+    ## actually print it. 
+    month_marker.to_excel(output_calendar, calendar_tab, startrow=row_offset)
+
+    ## use modulus and floor to create a calendar dataframe from the date
+    calendar_df=wam.get_calendar_from_date(current_date)
+
+    ## for the case when the performance period has december in it
+    try:
+        current_date=datetime.datetime(current_date.year,current_date.month+1,1)
+    except:
+        current_date=datetime.datetime(current_date.year+1,1,1)
+
+    ## For each stream, print a calendar across the row (because the calendars will be same for each stream)
     for data_col in range(num_data_cols):
         calendar_df.to_excel(output_calendar, calendar_tab, startrow=row_offset, startcol=col_offset)
         col_offset=col_offset+col_delta
 
+    ## reset column offset
     col_offset=col_offset_start
-    
+
+    ## increment row_offset
     row_offset=row_offset+row_delta
 
+## save document
 print "--Savings and closing calendar sheet"+'\n'
 output_calendar.save()
 output_calendar.close()
 
+## open the spreadsheet so that it can be formatted. 
 print "--Opening calendar sheet with formatter"+'\n'
 wb=load_workbook(output_calendar.path)
 ws=wb.get_sheet_by_name(calendar_tab)
 
-band_info_df=pd.DataFrame(energy_band_stats_by_day_df_pp[column_headings[0][:4]+'-RGB'])
-
-band_info_df.insert(0,"Date",band_info_df.index)
-band_info_df['Month']=band_info_df[band_info_df.columns[0]].apply(wam.datetime2fdom)
-band_info_groups=band_info_df.groupby('Month')
-
-
-
-
-start_date=start_timestamp.date()
 
 Color.CGGREEN='8BBE2F'
 Color.CGRED='D63E29'
 Color.CGGREY='605650'
 Color.CGBKGD='F2F2F2'
 
+
+
+
+
+
+
+
+start_date=start_timestamp.date()
+good_bad_days_all=[]
 for i in range(num_data_cols):
 
+
+    ## get the band info for the first data stream
+    band_info_df=pd.DataFrame(energy_band_stats_by_day_df_pp[column_headings[i][:4]+'-RGB'])
+    ## prepare to organize by month
+    band_info_df.insert(0,"Date",band_info_df.index)
+    ## add a month column
+    band_info_df['Month']=band_info_df[band_info_df.columns[0]].apply(wam.datetime2fdom)
+    ## group based on month
+    band_info_groups=band_info_df.groupby('Month')
+
     current_date=start_date
+
+    # a place to put the good bad info for a single stream for all the months in the performance period
+    good_bad_days_months=[]
     
     for j in range(elaps_month):
 
-        fdonm=datetime.date(current_date.year, current_date.month+1,1)
+        try:
+            fdonm=datetime.date(current_date.year, current_date.month+1,1)
         
-        dim=(fdonm-current_date).days
+            dim=(fdonm-current_date).days
+
+        except:
+            dim=31
         
         fdow=current_date.isoweekday()
 
         group_data=band_info_groups.get_group(current_date)
+
+
+        good_bad_days=[]
+        try:
+            
+            good_bad_days.append(group_data[column_headings[i][:4]+'-RGB'].value_counts()[-1])
+        except:
+            good_bad_days.append(0)
+
+        try:
+            good_bad_days.append(group_data[column_headings[i][:4]+'-RGB'].value_counts()[1])
+        except:
+            good_bad_days.append(0)
+
+        good_bad_days_months.append(good_bad_days)
+        
 
         for k in range(dim):
             
@@ -495,9 +568,15 @@ for i in range(num_data_cols):
             else:
                 c.style.font.color.index = Color.CGGREY
 
-        current_date=datetime.date(current_date.year,current_date.month+1,1)
+        try:
+            current_date=datetime.date(current_date.year,current_date.month+1,1)
+        except:
+            current_date=datetime.date(current_date.year+1,1,1)
+
+    good_bad_days_all.append(good_bad_days_months)
 
 
+## This just turns all the backgrounds grey in the cells for the calendar and changed the font size and stuff. 
 for i in range(num_data_cols):
 
     current_date=start_date
@@ -530,7 +609,9 @@ wb.save(output_calendar.path)
 if debug==True:
     pass
 else:
-    byebye=raw_input("Completed successfully, press enter to exit")
+    byebye=raw_input("--Completed successfully, press enter to exit")
+
+print ""
 
 
 #---------------------------------------------------------------------------------------------

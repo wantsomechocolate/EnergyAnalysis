@@ -397,7 +397,7 @@ def get_date_range_from_user(lower_bound_date, upper_bound_date, debug_mode=Fals
         return [sd_obj, ed_obj]
 
     else:
-        return [datetime.datetime(2013,7,1), datetime.datetime(2013,9,30)]
+        return [datetime.datetime(2013,10,1), datetime.datetime(2013,12,31)]
 
 
 
@@ -442,6 +442,7 @@ def get_operating_hours_from_user(debug=False):
 
     bucket_end_day_text="23:45"
 
+    start_stop_list=[]
 
     if debug==False:
     
@@ -497,6 +498,9 @@ def get_operating_hours_from_user(debug=False):
         bucket_start_time=bucket_open_to_closed_time
         bucket_end_time=bucket_closed_to_open_time
 
+
+    start_stop_list.append([bucket_start_time, bucket_end_time])
+
     bucket_current_time=bucket_start_day
     bucket_open_closed=[]
 
@@ -515,7 +519,7 @@ def get_operating_hours_from_user(debug=False):
                 
         bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
 
-    return bucket_open_closed
+    return bucket_open_closed, start_stop_list
     
 
 
@@ -726,7 +730,7 @@ def get_band_data(energy_interval_dataframe_def, weather_daily_dataframe_def, nu
 
 def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider):
 
-
+    start_stop_list_all=[]
     ## Fix this, it should not use 96 and 15 it should use numbers intrinsic to the data
     #------------------------------------------------------------------------
     start_time_for_plotting_average_day=datetime.datetime(2000,1,1,0,0)
@@ -792,7 +796,8 @@ def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_
         ## and "What time does the building go from open to closed?"
 
 
-        bucket_open_closed_hours=wam.get_operating_hours_from_user(debug=debug)
+        bucket_open_closed_hours, start_stop_list=wam.get_operating_hours_from_user(debug=debug)
+        start_stop_list_all.append(start_stop_list)
 
         ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
         bucket_operating_hours_by_day=[]
@@ -816,7 +821,7 @@ def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_
 
     bucketed_usage_df=bucketed_usage_df.set_index('Date')
 
-    return bucketed_usage_df
+    return bucketed_usage_df, start_stop_list_all
 
 
 def get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all, energy_interval_dataframe_all):
@@ -903,10 +908,14 @@ def get_calendar_from_date(date):
     fdow=fdom.isoweekday()
 
     #fdonm is first day of next month (To get the number of days in the month manually)
-    fdonm=datetime.datetime(date.year, date.month+1,1)
+    try:
+        fdonm=datetime.datetime(date.year, date.month+1,1)
 
-    ## dim is days in month
-    dim=(fdonm-fdom).days
+        ## dim is days in month
+        dim=(fdonm-fdom).days
+
+    except:
+        dim=31
 
     ## Initialize the calander shape no more than 7 days a week, at most 6 rows needed. 
     calander=np.zeros(6*7).reshape((6,7))

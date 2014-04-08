@@ -38,7 +38,7 @@ if debug==False:
     print "--You chose to analyze: "+book_name+'\n'
 else:
     print "--Please navigate to the .xlsx file containing your data\n"
-    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/TwoColumnInput.xlsx'
+    book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
     print "--You chose to analyze: "+book_name+'\n'
 
 
@@ -51,7 +51,7 @@ output_book = pd.ExcelWriter(output_bookname)
 output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_list[0])))
 
 
-print "--Output filepath   : "+output_bookname+'\n'
+print "--Output filepath   : "+output_bookname
 
 
 ## How many similar days do you want to return?
@@ -69,7 +69,7 @@ else:
 ##############################---------------Retrieve holiday data-------------------#######################
 
 ## The days to exclude are in a seperate text file
-print "--Getting list of holidays from text file to exclude them from analysis"+divider
+print "--Getting list of holidays from text file to exclude them from analysis"+"\n"+divider
 exclude_days=wam.get_excluded_days()
 
 
@@ -619,9 +619,18 @@ wb.save(output_calendar.path)
 
 
 ## creating the summary metric dataframe
-column_offset=4
+column_offset=3
 summary_metrics_all_tab="Summary Metrics"
 summary_metrics_all_df=pd.concat([start_stop_list_all_df,energy_band_performance_metrics_all_df, good_bad_days_all_df],ignore_index=True)
+
+
+summary_metrics_all_index=["Start Time","Stop Time", "Percent Lower Bound", "Percent Middle Bound", "Percent Upper Bound"]
+for i in range(elaps_month):
+    summary_metrics_all_index.append("GoodBad Month"+str(i+1))
+
+summary_metrics_all_df.insert(0,"Field",summary_metrics_all_index)
+summary_metrics_all_df=summary_metrics_all_df.set_index('Field')
+
 summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=column_offset)
 
 

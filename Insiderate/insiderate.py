@@ -1,6 +1,4 @@
-
-
-##############################---------------Imports-------------------#######################
+#############################---------------IMPORTS-------------------#######################
 
 import numpy as np, pylab as pl, pandas as pd
 import wam as wam, datetime, time, os
@@ -11,6 +9,10 @@ from openpyxl.style import Color, Fill
 from openpyxl.cell import Cell
 
 
+## DATE OF MAX USAGE FOR EACH PERFORMANCE PERIOD FOR EACH FUEL TYPE CALCULATED ON LINE 392
+## CTRL F "day_with_max" IF NOT FOUND THERE.
+
+##############################---------------PRELIM-------------------#######################
 
 ## This allows the program to run completely without user input, or not. 
 debug=True
@@ -18,18 +20,14 @@ debug=True
 ## This is for cosmetic stuff
 divider="\n---------------------------------------------------------------------------\n"
 
-
 ## Keep track of the time it takes to do various things
 time_list=[]
 time_list.append(time.time())
 
-
 print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)-------------------",divider
 
 
-
-##############################---------------File Logistics-------------------#######################
-
+##############################-------------FILE LOGISTICS-------------#######################
 
 ## Have user navigate to desired book and show them what they chose.
 if debug==False:
@@ -44,15 +42,12 @@ else:
 
 ## Get output book name by adding "results" and a time stamp to the filename
 ## 'add_to_filename' adds text to file name without affecting the extension
-
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
 output_book = pd.ExcelWriter(output_bookname)
 
 output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_list[0])))
 
-
 print "--Output filepath   : "+output_bookname
-
 
 ## How many similar days do you want to return?
 print divider+'\n'+"--Now you have to tell me how many days to be used when calculating the band"+'\n'
@@ -66,7 +61,7 @@ else:
     num_matches=default_choice
 
 
-##############################---------------Retrieve holiday data-------------------#######################
+##############################----------DAYS TO EXCLUDE-------------#######################
 
 ## The days to exclude are in a seperate text file
 print "--Getting list of holidays from text file to exclude them from analysis"+"\n"+divider
@@ -330,7 +325,7 @@ energy_monthly_df.to_excel(output_book,"Monthly Usage")
 
 ##------------------FIND THE PEAK WEAK FOR EACH MONTH IN PERFORMANCE PERIOD-------------------------
 
-## Change so that peak week is all put on the same tab. There is no need to have a tab for each month!?!?!?
+## Change so that peak week is all put on the same tab. There is no need to have a tab for each month
 
 print "--Getting the peak weak in each month in the performance period for all streams"+'\n'
 ## A place to put the results
@@ -348,16 +343,18 @@ start_month=start_timestamp.month
 end_timestamp=max(performance_group.get_group(end_date_pp).index)
 end_month=end_timestamp.month
 
-## Slice up the df to get ther performance period df. 
+## Slice up the df to get the performance period df. 
 energy_interval_dataframe_pp=energy_interval_dataframe[start_timestamp: end_timestamp]
 
 ## Take that and group it by month because we're finding the peak day and surrounding week for each month in the pp
 performance_period_group_by_month=energy_interval_dataframe_pp.groupby('Month')
 
-
+max_days_all_streams_all_months=[]
 
 ## for every month in the performance period. 
 for current_month in range(start_month,end_month+1):
+
+    max_days_all_months=[]
     
     ## Get the single months data
     performance_period_single_month_df=pd.DataFrame(performance_period_group_by_month.get_group(current_month))
@@ -395,6 +392,10 @@ for current_month in range(start_month,end_month+1):
 
         ## Add this to the list - need to fix this because there should be multiple lists or a list of lists
         peak_week_all_streams_list.append(pd.DataFrame(peak_week_interval_data[peak_week_interval_data.columns[i]]))
+
+        max_days_all_months.append(day_with_max)
+
+    max_days_all_streams_all_months.append(max_days_all_months)
 
 
     peak_week_all_streams_all_months_list.append(peak_week_all_streams_list)
@@ -614,7 +615,10 @@ for i in range(num_data_cols):
                 pass
 
 print "--Saving the calendar workbook"+'\n'
-wb.save(output_calendar.path)
+try:
+    wb.save(output_calendar.path)
+except:
+    print "--Calendar book could not be saved, calendars will have to be manually generated"
 
 
 
@@ -635,6 +639,9 @@ summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=col
 
 
 
+## Hackin it. 
+pd.DataFrame(max_days_all_streams_all_months).to_excel(output_book,"Peak Days")
+
 print "--Saving the results book"+'\n'
 output_book.save()
 output_book.close()
@@ -648,16 +655,7 @@ else:
 
 
 
-
-
 #---------------------------------------------------------------------------------------------
-## LAST THING I NEED TO DO
-## Peak Demand in months
-## I also need to go in and add up the amount of usage above and below the band for each day?
-## Get days above and days below biand
-
-
-
 
 ## Test cases
 

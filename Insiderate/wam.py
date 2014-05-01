@@ -11,6 +11,8 @@ import re
 import pylab as pl
 
 
+## BAND IS CALCULATED ON LINE 673 OF THIS FILE. SEARCH FOR "BAND IS CALCULATED" IF NOT FOUND THERE.
+
 
 def get_excluded_days():
 
@@ -670,16 +672,18 @@ def get_band_data(energy_interval_dataframe_def, weather_daily_dataframe_def, nu
         energy_band_stats_by_day_df=df.groupby('Date').agg(np.sum)
 
 
-        
+## HERE IS WHERE THE DAILY BAND IS CALCULATED
 
         ## This takes the sum of the variances and square roots it, which gives us the aggregate standard deviation
         energy_band_stats_by_day_df[data_heading+'-VarRoot']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[-1]].apply(np.sqrt)
 
         ## Take the var root and add to mean for upper
-        energy_band_stats_by_day_df[data_heading+'-Upper']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]+energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
+        dev_calc_method=2 # for adding the sqrt, or 4 for adding the square of the variances and then sqrting. The number just refers
+        ## To the column where the band data is being taken from. 
+        energy_band_stats_by_day_df[data_heading+'-Upper']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]+energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[dev_calc_method]]
 
         ## Subtract from mean for lower
-        energy_band_stats_by_day_df[data_heading+'-Lower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[4]]
+        energy_band_stats_by_day_df[data_heading+'-Lower']=energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[1]]-energy_band_stats_by_day_df[energy_band_stats_by_day_df.columns[dev_calc_method]]
 
 
 

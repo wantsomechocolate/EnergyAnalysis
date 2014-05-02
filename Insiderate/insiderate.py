@@ -5,7 +5,7 @@ import wam as wam, datetime, time, os
 from marbles import glass as chan
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.style import Color, Fill
+from openpyxl.style import Color, Fill, Border
 from openpyxl.cell import Cell
 
 
@@ -400,6 +400,8 @@ for current_month in range(start_month,end_month+1):
 
     peak_week_all_streams_all_months_list.append(peak_week_all_streams_list)
 
+peak_days_all_df=pd.DataFrame(max_days_all_streams_all_months)
+
 peak_week_tab="Peak Week"
 peak_week_row_delta=700
 peak_week_col_delta=2
@@ -506,7 +508,7 @@ start_date=start_timestamp.date()
 good_bad_days_all=[]
 for i in range(num_data_cols):
 
-
+    
     ## get the band info for the first data stream
     band_info_df=pd.DataFrame(energy_band_stats_by_day_df_pp[column_headings[i][:4]+'-RGB'])
     ## prepare to organize by month
@@ -550,7 +552,8 @@ for i in range(num_data_cols):
 
         good_bad_days_months.append(good_bad_days)
         
-
+        peak_day_for_iter=peak_days_all_df[i][j].day-1
+        
         for k in range(dim):
             
             index=k+fdow
@@ -571,6 +574,20 @@ for i in range(num_data_cols):
                 
             else:
                 c.style.font.color.index = Color.CGGREY
+
+            ## Instead of looping through if a bajillion times, I should go in after and apply the border
+            ## I did it this way because I'm lazy. 
+            if k==peak_day_for_iter:
+                print "HEEELLLLLOOOOOOO"
+                c.style.borders.top.border_style=Border.BORDER_THIN
+                c.style.borders.bottom.border_style=Border.BORDER_THIN
+                c.style.borders.left.border_style=Border.BORDER_THIN
+                c.style.borders.right.border_style=Border.BORDER_THIN
+                #c.style.borders.color.index=Color.CGRED
+                c.style.borders.top.color.index=Color.CGRED
+                c.style.borders.bottom.color.index=Color.CGRED
+                c.style.borders.left.color.index=Color.CGRED
+                c.style.borders.right.color.index=Color.CGRED
 
         try:
             current_date=datetime.date(current_date.year,current_date.month+1,1)
@@ -604,7 +621,7 @@ for i in range(num_data_cols):
             col=(index%7)+col_offset_start+(col_delta*i)+1
 
             c=ws.cell(row=row, column=col)
-
+            c.style.font.bold=True
             c.style.fill.fill_type=Fill.FILL_SOLID
             c.style.fill.start_color.index = Color.CGBKGD
             c.style.font.name='Century Gothic'
@@ -639,8 +656,9 @@ summary_metrics_all_df.to_excel(output_book,summary_metrics_all_tab,startcol=col
 
 
 
-## Hackin it. 
-pd.DataFrame(max_days_all_streams_all_months).to_excel(output_book,"Peak Days")
+## Hackin it.
+peak_days_tab="Peak Days"
+peak_days_all_df.to_excel(output_book,peak_days_tab)
 
 print "--Saving the results book"+'\n'
 output_book.save()

@@ -15,7 +15,7 @@ from openpyxl.cell import Cell
 ##############################---------------PRELIM-------------------#######################
 
 ## This allows the program to run completely without user input, or not. 
-debug=True
+debug=False
 
 ## This is for cosmetic stuff
 divider="\n---------------------------------------------------------------------------\n"
@@ -30,14 +30,14 @@ print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)---------
 ##############################-------------FILE LOGISTICS-------------#######################
 
 ## Have user navigate to desired book and show them what they chose.
-if debug==False:
+if debug==False: 
     print "--Please navigate to the .xlsx file containing your data\n"
-    book_name=chan.getPath(os.getcwd())
+    filetypes=[("Xlsx Files","*.xlsx")]
+    book_name=chan.getPath(os.getcwd(), filetypes)
     print "--You chose to analyze: "+book_name+'\n'
 else:
-    print "--Please navigate to the .xlsx file containing your data\n"
     book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
-    print "--You chose to analyze: "+book_name+'\n'
+    print "--Auto chose to analyze: "+book_name+'\n'
 
 
 ## Get output book name by adding "results" and a time stamp to the filename
@@ -674,6 +674,8 @@ else:
 
 
 #---------------------------------------------------------------------------------------------
+
+## Make it look for a local exclude_days first
 
 ## Test cases
 

@@ -9,9 +9,6 @@ from openpyxl.style import Color, Fill, Border
 from openpyxl.cell import Cell
 
 
-## DATE OF MAX USAGE FOR EACH PERFORMANCE PERIOD FOR EACH FUEL TYPE CALCULATED ON LINE 392
-## CTRL F "day_with_max" IF NOT FOUND THERE.
-
 ##############################---------------PRELIM-------------------#######################
 
 ## This allows the program to run completely without user input, or not. 
@@ -37,88 +34,88 @@ if debug==False:
     print "--You chose to analyze: "+book_name+'\n'
 else:
     book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
-    print "--Auto chose to analyze: "+book_name+'\n'
+    print "--Analyzing: "+book_name+'\n'
 
 
 ## Get output book name by adding "results" and a time stamp to the filename
 ## 'add_to_filename' adds text to file name without affecting the extension
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
+
+## This is where all the results will go 
 output_book = pd.ExcelWriter(output_bookname)
 
+## Except for the calander results, they go in a different place
 output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_list[0])))
 
+## Tell user the output file name - use output_bookname and not output_book because output_book is a writer object, not a string
 print "--Output filepath   : "+output_bookname
 
+
+##############################-------NUMBER OF SIMILAR DAYS--------#########################
+
 ## How many similar days do you want to return?
-print divider+'\n'+"--Now you have to tell me how many days to be used when calculating the band"+'\n'
-print "----For 1 year, put 3, for 1.5 years, put 4, for 2 or more years, put 5. 6 is max"+'\n'
+print divider+'\n'+"--Similar Days to use when generating the band. For 1 year of data, put 3."+'\n'
+print "----For 1.5 years, put 4, for 2 or more years, put 5. 6 is the max"+'\n'
+## Set defualt to use in getIntegerInput
 default_choice=5
-
+## getIntegerInput(min, max, prompt, default, I don't what that last argument is for)
 if debug==False:
-    num_matches=chan.getIntegerInput(3,6,"----Just press enter to use the number brackets ["+str(default_choice)+"]> ",default_choice,[])
-
+    num_matches=chan.getIntegerInput(3,6,"----Just press enter to use the number in brackets ["+str(default_choice)+"]> ",default_choice,[])
 else:
     num_matches=default_choice
 
 
-##############################----------DAYS TO EXCLUDE-------------#######################
+##############################----------DAYS TO EXCLUDE-------------#########################
 
 ## The days to exclude are in a seperate text file
 print "--Getting list of holidays from text file to exclude them from analysis"+"\n"+divider
 exclude_days=wam.get_excluded_days()
 
 
-
-
-##############################---------------Retrieve weather data-------------------#######################
+##############################-----------GET WEATHER DATA-----------#########################
 
 ## This spreadsheet is shipped with the program and can be updated and maintaned seperate from the energy usage data
 weather_book_name='program_data/WeatherData.xlsx'
-
 
 ## Get the weather data
 print "--Reading in weather data"+'\n'
 wbw = pd.ExcelFile(weather_book_name)
 
-
 ## Weather only has one tab right now that is referred to using the 0 index
 weather_interval_dataframe_all=wbw.parse(wbw.sheet_names[0])
 
-
-print "--Duplicating the first column and setting as the index."+'\n'
+#print "--Duplicating the first column and setting as the index."+'\n'
 ## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
 weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
 
+print "Read weather data successfully."
 
-##############################---------------Retrieve energy data-------------------#######################
 
+##############################-----------GET ENERGY DATA------------#########################
 
+## book_name is the file path given by the user earlier.
 wb = pd.ExcelFile(book_name)
-
 
 print "--Reading in energy data"+'\n'
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
-
-print "--Getting the number of data columns"+'\n'
+#print "--Getting the number of data columns"+'\n'
 num_data_cols=len(energy_interval_dataframe_all.columns)-1
 
-
-print "--Get list of data streams"+'\n'
+#print "--Get list of data streams"+'\n'
 column_headings=list(energy_interval_dataframe_all.columns)
 dummy=column_headings.pop(0)
 
-
-print "--Make timestamp index and first column"+'\n'
+#print "--Make timestamp index and first column"+'\n'
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
 
 ##############################---------------FILL GAPS-------------------#######################
 
-### THIS STEP IS HUGE, I'm filling in the missing data up to four gaps accross. For example,
-# a gap of ten will turn into a gap of 6. This uses a linear fill.
+## This isn't working at the moment. the limit doesn't do what I want, which is to only linear fill if the gap is 4 or less.
+## What the below line would do is linear fill up to four gaps. so a gap of 10 readings would turn into a gap of 6 readings.
+## There was also a problem using when analyzing more than one stream of data. 
 #energy_interval_dataframe_all=energy_interval_dataframe_all.interpolate(limit=4)
-
 
 
 

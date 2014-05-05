@@ -51,20 +51,6 @@ output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_l
 print "--Output filepath   : "+output_bookname
 
 
-##############################-------NUMBER OF SIMILAR DAYS--------#########################
-
-## How many similar days do you want to return?
-print divider+'\n'+"--Similar Days to use when generating the band. For 1 year of data, put 3."+'\n'
-print "----For 1.5 years, put 4, for 2 or more years, put 5. 6 is the max"+'\n'
-## Set defualt to use in getIntegerInput
-default_choice=5
-## getIntegerInput(min, max, prompt, default, I don't what that last argument is for)
-if debug==False:
-    num_matches=chan.getIntegerInput(3,6,"----Just press enter to use the number in brackets ["+str(default_choice)+"]> ",default_choice,[])
-else:
-    num_matches=default_choice
-
-
 ##############################----------DAYS TO EXCLUDE-------------#########################
 
 ## The days to exclude are in a seperate text file
@@ -153,9 +139,24 @@ summary_metric_df.to_excel(output_book,"Summary Metrics")
 
 
 
+##############################-------NUMBER OF SIMILAR DAYS--------#########################
+
+## How many similar days do you want to return?
+print divider+'\n'+"--Similar Days to use when generating the band. For 1 year of data, put 3."+'\n'
+print "----For 1.5 years, put 4, for 2 or more years, put 5. 6 is the max"+'\n'
+## Set defualt to use in getIntegerInput
+default_choice=5
+## getIntegerInput(min, max, prompt, default, I don't what that last argument is for)
+if debug==False:
+    num_matches=chan.getIntegerInput(3,6,"----Just press enter to use the number in brackets ["+str(default_choice)+"]> ",default_choice,[])
+else:
+    num_matches=default_choice
+
+
 ##############################-------ANALYZING THE WEATHER---------#######################
 
-print "--Preparing data from for grouping by various time based criteria"+'\n'
+print "Analyzing weather data"+'\n'
+
 ## Preparing data from for grouping by various time based criteria
 
 ## Slices the weather dataframe down to the analysis period and do some other stuff to make it easier to group by
@@ -164,47 +165,47 @@ weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_in
 
 
 ## Group the data by calendar day via the groupby method.
-print "--Grouping the data by calandar day."+'\n'
+#print "--Grouping the data by calandar day."+'\n'
 weather_daily_grouping=weather_interval_dataframe.groupby('Date')
 
 ## Create a dataframe from the group by taking the mean for each one.
-print "--Calculating the mean of each group for new dataframe."+'\n'
+#print "--Calculating the mean of each group for new dataframe."+'\n'
 weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.columns[1]].agg({'Mean' : np.mean})
 
 ## This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
 ## and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
 ## It adds those results to the data frame and then returns it.
-print "--Getting k 1d nearest neighbors in the average day dataframe."+'\n'
+#print "--Getting k 1d nearest neighbors in the average day dataframe."+'\n'
 weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
 
-## print wetaher daily dataframe to the excel sheet so we can see the similar days assigned to each day
-print "--Printing similar day data to spreadsheet object"+'\n'
-weather_daily_dataframe.to_excel(output_book,"WBTSimDays")
+
 
 ## This function takes a df of interval data (multiple readings per day)
 ## and slices it down to the given dates and returns a df representing a single day
 ## with the average weekday, average weekend, peak day, and min day
-print "--Getting the average day metrics for weather in the performance period"+'\n'
+#print "--Getting the average day metrics for weather in the performance period"+'\n'
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
+print "Printing results to excel workbook object"+'\n'
+
+## print wetaher daily dataframe to the excel sheet so we can see the similar days assigned to each day
+#print "--Printing similar day data to spreadsheet object"+'\n'
+weather_daily_dataframe.to_excel(output_book,"WBTSimDays")
 
 ## Write to excel object
-print "--Printing weather average day to excel object"+'\n'
+#print "--Printing weather average day to excel object"+'\n'
 weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 
 ##############################-------ENERGY AVERAGE DAY STATS---------#######################
 
-
-print "--Preparing dataframe for grouping by time"+'\n'
+print "--Calculating average day operating profile metrics"+'\n'
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
-
-
 
 
 ## Getting this right involves making the column names unique for each set. Should be easy
 ## Just use the first couple chars of item as column heading.
-print "--Getting average day energy profile metrics"+'\n'
+#print "--Getting average day energy profile metrics"+'\n'
 df_ave_day_list=[]
 for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)
@@ -216,7 +217,7 @@ else:
     ave_day_stats_pp=df_ave_day_list[0].join(df_ave_day_list[1:], how='outer')
 
 
-print "--Printing ave day stats to excel object."+'\n'
+print "--Printing average day operating profile metrics to excel workbook object."+'\n'
 ave_day_stats_pp.to_excel(output_book,"EnergyAveDay")
 
 
@@ -319,7 +320,7 @@ print "--Printing monthly vales to excel object"+'\n'
 energy_monthly_df.to_excel(output_book,"Monthly Usage")
 
 
-
+## Turn peak weak info into function in wam. 
 ##------------------FIND THE PEAK WEAK FOR EACH MONTH IN PERFORMANCE PERIOD-------------------------
 
 ## Change so that peak week is all put on the same tab. There is no need to have a tab for each month
@@ -413,11 +414,11 @@ for month in range(len(peak_week_all_streams_all_months_list)):
 
 
 
-##-----------------------------------CALANDERS---------------------------------------------------
+##-----------------------------------CALENDARS---------------------------------------------------
 ## output tab
 output_calendar = pd.ExcelWriter(output_calendar_name)
 
-print "--Printing the calendars to excel in a different book"+'\n'
+print "--Printing the calendars to excel in a different book because formatting"+'\n'
 
 calendar_tab="Calendars"
 
@@ -479,7 +480,7 @@ for month in range(elaps_month):
     row_offset=row_offset+row_delta
 
 ## save document
-print "--Savings and closing calendar sheet"+'\n'
+print "--Saving and closing calendar sheet"+'\n'
 output_calendar.save()
 output_calendar.close()
 
@@ -493,12 +494,6 @@ Color.CGGREEN='8BBE2F'
 Color.CGRED='D63E29'
 Color.CGGREY='605650'
 Color.CGBKGD='F2F2F2'
-
-
-
-
-
-
 
 
 start_date=start_timestamp.date()
@@ -633,7 +628,6 @@ try:
     wb.save(output_calendar.path)
 except:
     print "--Calendar book could not be saved, calendars will have to be manually generated"
-
 
 
 ## creating the summary metric dataframe

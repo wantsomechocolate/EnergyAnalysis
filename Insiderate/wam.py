@@ -945,7 +945,85 @@ def get_calendar_from_date(date):
     return calander_df
 
 
+def get_peak_week(energy_interval_dataframe, start_date_pp, end_date_pp, num_data_cols):
 
+    ## A place to put the results
+    ## This will be a list of all streams for all months
+    peak_week_all_streams_all_months_list=[]
+
+    ## Group the df of all the data into days to find the appropriate timestamps to use to slice the df with the dates chosen before
+    performance_group=energy_interval_dataframe.groupby('Date')
+
+    ## Start timestamp is the min timestamp in the start DATE's set of interval data
+    start_timestamp=min(performance_group.get_group(start_date_pp).index)
+    start_month=start_timestamp.month
+
+    ## End timestamp is the max ts in the enddates's interval data
+    end_timestamp=max(performance_group.get_group(end_date_pp).index)
+    end_month=end_timestamp.month
+
+    ## Slice up the df to get the performance period df. 
+    energy_interval_dataframe_pp=energy_interval_dataframe[start_timestamp: end_timestamp]
+
+    ## Take that and group it by month because we're finding the peak day and surrounding week for each month in the pp
+    performance_period_group_by_month=energy_interval_dataframe_pp.groupby('Month')
+
+    max_days_all_streams_all_months=[]
+
+    ## for every month in the performance period. 
+    for current_month in range(start_month,end_month+1):
+
+        max_days_all_months=[]
+        
+        ## Get the single months data
+        performance_period_single_month_df=pd.DataFrame(performance_period_group_by_month.get_group(current_month))
+
+        peak_week_all_streams_list=[]
+
+        ## Here is where the second loop should start
+        ## I need to get the peak weak for all streams and add it to a list and concatonate it and print it to the
+        ## excel file before I can move on to the next month. So close!
+
+        for i in range(1,num_data_cols+1):
+
+            # Get date of max usage
+            day_with_max=performance_period_single_month_df[performance_period_single_month_df.columns[i]].idxmax().date()
+
+            # Go back the appropriate number of days
+            peak_week_start_date=day_with_max-datetime.timedelta(days=day_with_max.isoweekday())
+
+            # Go forward the appropriate number of days
+            peak_week_end_date=day_with_max+datetime.timedelta(days=7-day_with_max.isoweekday()-1)
+
+            ## Use start date to get start timestamp
+            peak_week_timestamp_start=min(performance_group.get_group(peak_week_start_date).index)
+
+            ## Use end date to get end timestamp
+            try:
+                peak_week_timestamp_end=max(performance_group.get_group(peak_week_end_date).index)
+                
+            except:
+                print "It looks like the peak day is in a week that extends passed the performance period"
+                peak_week_timestamp_end=end_timestamp
+
+            ## slice the interval_data_df to get the peak week - does this have band info?
+            peak_week_interval_data=energy_interval_dataframe[peak_week_timestamp_start: peak_week_timestamp_end]
+
+            ## Add this to the list - need to fix this because there should be multiple lists or a list of lists
+            peak_week_all_streams_list.append(pd.DataFrame(peak_week_interval_data[peak_week_interval_data.columns[i]]))
+
+            max_days_all_months.append(day_with_max)
+
+        max_days_all_streams_all_months.append(max_days_all_months)
+
+
+        peak_week_all_streams_all_months_list.append(peak_week_all_streams_list)
+
+    peak_days_all_df=pd.DataFrame(max_days_all_streams_all_months)
+
+    pp_bounds_datetime_list=[start_timestamp, end_timestamp]
+
+    return [peak_week_all_streams_all_months_list, peak_days_all_df, pp_bounds_datetime_list]
 
 
 

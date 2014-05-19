@@ -16,12 +16,20 @@ from openpyxl.cell import Cell
 ## BAND IS CALCULATED ON LINE 673 OF THIS FILE. SEARCH FOR "BAND IS CALCULATED" IF NOT FOUND THERE.
 
 
-def get_excluded_days():
+def get_excluded_days(path_name='program_data/exclude_days.txt'):
 
     ## this filename is hardcoded in, the file will be shipped with
     ## the program so that users can add to it. 
-    filename='program_data/exclude_days.txt'
-    fh=open(filename,'r')
+
+    try:
+        filename=path_name+"/exclude_days.txt"
+        fh=open(filename, 'r')
+        print "--Using local exclude_days.txt"+'/n'
+        
+    except:
+        filename='program_data/exclude_days.txt'
+        fh=open(filename,'r')
+
     contents=fh.readlines()
     exclude_days=[]
     for item in contents:
@@ -183,21 +191,22 @@ def datetime2hour(datetime):
     return hour*4+minute/15
     #return datetime.hour
 
-def datetime2bday(datetime):
-    date=datetime.date()
-    
-    if date in exclude_days: ## Exclude days is a global variable
-        return 'Weekend'
-    
-    else: pass
-    
-    day_of_week=datetime.isoweekday()
-    
-    if day_of_week<=5:
-        return 'Weekday'
-    
-    else:
-        return 'Weekend'
+##def datetime2bday(datetime):
+##    date=datetime.date()
+##    
+##    if date in exclude_days: ## Exclude days is a global variable
+##        return 'Weekend'
+##    
+##    else: pass
+##    
+##    day_of_week=datetime.isoweekday()
+##    
+##    if day_of_week<=5:
+##        return 'Weekday'
+##    
+##    else:
+##        return 'Weekend'
+
 
 def datetime2month(datetime):
     return datetime.month
@@ -213,7 +222,7 @@ def datetime2fdom(datetime_def):
 
 ## I didn't know how to pass a function with variables to the agg operator so
 ## so I had to define it in the top level of my module :(
-exclude_days=get_excluded_days()
+#exclude_days=get_excluded_days()
 def prepare_dataframe_for_grouping_by_time(df, sd, ed):
 
     ## Get slice that will be used for band analysis (1-3 years most likely)
@@ -230,7 +239,9 @@ def prepare_dataframe_for_grouping_by_time(df, sd, ed):
     df['Year']=df[df.columns[0]].apply(datetime2year)
 
     ## Add a daytype that seperates days into Weekday and Holiday/Weekend
-    df['DayType']=df[df.columns[0]].apply(datetime2bday)
+            ## This had to be done top level for now because these applu
+            ## functions don't take any arguments except for the contents of the rows
+    #df['DayType']=df[df.columns[0]].apply(datetime2bday)
 
     ## get first time stamp in group that is the start date
     group=df.groupby('Date')

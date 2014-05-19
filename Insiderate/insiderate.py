@@ -9,6 +9,26 @@ from openpyxl.style import Color, Fill, Border
 from openpyxl.cell import Cell
 
 
+
+#########################--FUNCTION CALLS THAT NEED GLOBAL VARIABLES--#######################
+
+def datetime2bday(datetime):
+    date=datetime.date()
+    
+    if date in exclude_days: ## Exclude days is a global variable
+        return 'Weekend'
+    
+    else: pass
+    
+    day_of_week=datetime.isoweekday()
+    
+    if day_of_week<=5:
+        return 'Weekday'
+    
+    else:
+        return 'Weekend'
+
+
 ##############################---------------PRELIM-------------------#######################
 
 ## This allows the program to run completely without user input, or not. 
@@ -55,7 +75,8 @@ print "--Output filepath   : "+output_bookname
 
 ## The days to exclude are in a seperate text file
 print "--Getting list of holidays from text file to exclude them from analysis"+"\n"+divider
-exclude_days=wam.get_excluded_days()
+path_to_check=os.path.dirname(book_name)
+exclude_days=wam.get_excluded_days(path_to_check)
 
 
 ##############################-----------GET WEATHER DATA-----------#########################
@@ -155,13 +176,18 @@ else:
 
 ##############################-------ANALYZING THE WEATHER---------#######################
 
-print "Analyzing weather data"+'\n'
+print "--Analyzing weather data"+'\n'
 
 ## Preparing data from for grouping by various time based criteria
 
 ## Slices the weather dataframe down to the analysis period and do some other stuff to make it easier to group by
 ## various time based metrics
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
+
+
+weather_interval_dataframe['DayType']=weather_interval_dataframe[weather_interval_dataframe.columns[0]].apply(datetime2bday)
+
+
 
 
 ## Group the data by calendar day via the groupby method.
@@ -186,7 +212,7 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 #print "--Getting the average day metrics for weather in the performance period"+'\n'
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
-print "Printing results to excel workbook object"+'\n'
+print "--Printing results to excel workbook object"+'\n'
 
 ## print wetaher daily dataframe to the excel sheet so we can see the similar days assigned to each day
 #print "--Printing similar day data to spreadsheet object"+'\n'
@@ -201,6 +227,10 @@ weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 print "--Calculating average day operating profile metrics"+'\n'
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
+
+## This is a little extra that can't be done in above function because it needs access to the variable exclude days
+## and I'm not a good programmer so I did it this way. 
+energy_interval_dataframe['DayType']=energy_interval_dataframe[energy_interval_dataframe.columns[0]].apply(datetime2bday)
 
 
 ## Getting this right involves making the column names unique for each set. Should be easy

@@ -24,7 +24,7 @@ def get_excluded_days(path_name='program_data/exclude_days.txt'):
     try:
         filename=path_name+"/exclude_days.txt"
         fh=open(filename, 'r')
-        print "--Using local exclude_days.txt"+'/n'
+        print "--Using local exclude_days.txt"+'\n'
         
     except:
         filename='program_data/exclude_days.txt'

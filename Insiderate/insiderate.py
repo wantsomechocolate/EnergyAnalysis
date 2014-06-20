@@ -11,7 +11,8 @@ from openpyxl.cell import Cell
 
 
 #########################--FUNCTION CALLS THAT NEED GLOBAL VARIABLES--#######################
-
+## I don't know how to pass variables to these column operator functions, they implicitly take
+## each term in the column as an argument, but giving them another one wasn't working out. 
 def datetime2bday(datetime):
     date=datetime.date()
     
@@ -32,7 +33,7 @@ def datetime2bday(datetime):
 ##############################---------------PRELIM-------------------#######################
 
 ## This allows the program to run completely without user input, or not. 
-debug=True
+debug=False
 
 ## This is for cosmetic stuff
 divider="\n---------------------------------------------------------------------------\n"
@@ -48,17 +49,18 @@ print divider,"-------------------Welcome to Insiderate (In-sid-er-ate)---------
 
 ## Have user navigate to desired book and show them what they chose.
 if debug==False: 
-    print "--Please navigate to the .xlsx file containing your data\n"
+    print ("--Please navigate to the .xlsx file containing your data\n")
     filetypes=[("Xlsx Files","*.xlsx")]
     book_name=chan.getPath(os.getcwd(), filetypes)
-    print "--You chose to analyze: "+book_name+'\n'
+    print ("--You chose to analyze: "+book_name+'\n')
 else:
     book_name='/home/wantsomechocolate/Code/EnergyAnalysis/ZY-IO/Working Input/Three Years/ElecGap.xlsx'
-    print "--Analyzing: "+book_name+'\n'
+    print ("--Analyzing: "+book_name+'\n')
 
 
 ## Get output book name by adding "results" and a time stamp to the filename
 ## 'add_to_filename' adds text to file name without affecting the extension
+## Maybe shutil can do this better or something.
 output_bookname=chan.add_to_filename(book_name,"-Results-"+str(int(time_list[0])))
 
 ## This is where all the results will go 
@@ -67,8 +69,9 @@ output_book = pd.ExcelWriter(output_bookname)
 ## Except for the calander results, they go in a different place
 output_calendar_name=chan.add_to_filename(book_name,"-Calendars-"+str(int(time_list[0])))
 
-## Tell user the output file name - use output_bookname and not output_book because output_book is a writer object, not a string
-print "--Output filepath   : "+output_bookname
+## Tell user the output file name - use output_bookname and not output_book because output_book is a writer object,
+## not a string
+print ("--Output filepath   : "+output_bookname)
 
 
 ##############################----------DAYS TO EXCLUDE-------------#########################
@@ -84,18 +87,19 @@ exclude_days=wam.get_excluded_days(path_to_check)
 ## This spreadsheet is shipped with the program and can be updated and maintaned seperate from the energy usage data
 weather_book_name='program_data/WeatherData.xlsx'
 
-## Get the weather data
-print "--Reading in weather data"+'\n'
+## Get the weather data wbw is weather workbook
+print ("--Reading in weather data"+'\n')
 wbw = pd.ExcelFile(weather_book_name)
 
 ## Weather only has one tab right now that is referred to using the 0 index
+## This means that it is ok to add a tab to this book with hdd/cdd data.
+## I will do that soon. 
 weather_interval_dataframe_all=wbw.parse(wbw.sheet_names[0])
 
-#print "--Duplicating the first column and setting as the index."+'\n'
 ## I do operations that are easy to do on both columns and pandas indices so here I make sure to have both
 weather_interval_dataframe_all=wam.duplicate_first_column_as_index(weather_interval_dataframe_all,'DateTimeStamp')
 
-print "--Read weather data successfully."+'\n'
+print ("--Read weather data successfully."+'\n')
 
 
 ##############################-----------GET ENERGY DATA------------#########################
@@ -103,17 +107,19 @@ print "--Read weather data successfully."+'\n'
 ## book_name is the file path given by the user earlier.
 wb = pd.ExcelFile(book_name)
 
-print "--Reading in energy data"+'\n'
+print ("--Reading in energy data"+'\n')
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
-#print "--Getting the number of data columns"+'\n'
+## Get the number of columns of actual data (aka exclude the timestamp column)
 num_data_cols=len(energy_interval_dataframe_all.columns)-1
 
-#print "--Get list of data streams"+'\n'
+## Get all of the column headings
 column_headings=list(energy_interval_dataframe_all.columns)
+
+## Pop off the one you don't need (the first one)
 dummy=column_headings.pop(0)
 
-#print "--Make timestamp index and first column"+'\n'
+## Same as with weather, make the timestamps a column as well as an index for easier manipulation
 energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interval_dataframe_all,'DateTimeStamp')
 
 
@@ -128,7 +134,11 @@ energy_interval_dataframe_all=wam.duplicate_first_column_as_index(energy_interva
 
 ##############################-------CONVERGE ON WORKING SET OF DATES---------#######################
 
-lower_bound_date, upper_bound_date = wam.get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all, energy_interval_dataframe_all)
+## This function takes the datalists and compares the dates to get you a daterange in which you have overlapping data.
+## It spits out a lot of print statements telling you different things. It uses the exclude days
+## Just to give you a warning that you may be including days in the anlysis that you don't want to. 
+lower_bound_date, upper_bound_date = wam.get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all,
+                                                                         energy_interval_dataframe_all)
 
 ## Performance period date range
 print "--Enter the START DATE and END DATE for the performance period (Usually 1-3 months)"+'\n'
@@ -152,6 +162,7 @@ else:
 ## other wise you have failed. 
 
 
+## Print some of the user input out so they don't have to record it elsewhere.
 summary_metric_headings=["Analysis Period Start","Analysis Period End","Performance Period Start","Performance Period End"]
 summary_metric_data=[start_date_all,end_date_all,start_date_pp,end_date_pp]
 summary_metric_df=pd.DataFrame(summary_metric_data, summary_metric_headings)
@@ -176,7 +187,7 @@ else:
 
 ##############################-------ANALYZING THE WEATHER---------#######################
 
-print "--Analyzing weather data"+'\n'
+print ("--Analyzing weather data"+'\n')
 
 ## Preparing data from for grouping by various time based criteria
 
@@ -184,24 +195,23 @@ print "--Analyzing weather data"+'\n'
 ## various time based metrics
 weather_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(weather_interval_dataframe_all, start_date_all, end_date_all)
 
-
+## The above takes the date column and makes a day,hour,month, whatever column. It can't make the weekday weekend column
+## becuase the custom apply function datetime2bday needs a variable in this scope and can't get it as a function
+## in another world. I'm sure there is a better way, there's got to be a better way.
 weather_interval_dataframe['DayType']=weather_interval_dataframe[weather_interval_dataframe.columns[0]].apply(datetime2bday)
 
 
-
-
 ## Group the data by calendar day via the groupby method.
-#print "--Grouping the data by calandar day."+'\n'
 weather_daily_grouping=weather_interval_dataframe.groupby('Date')
 
 ## Create a dataframe from the group by taking the mean for each one.
-#print "--Calculating the mean of each group for new dataframe."+'\n'
 weather_daily_dataframe=weather_daily_grouping[weather_interval_dataframe.columns[1]].agg({'Mean' : np.mean})
 
 ## This takes the data frame, uses the index (dates) and the first column of data (average wetbulb temperatures here)
 ## and then for each number in the list finds the k nearest numbers and their corresponding index (or date)
 ## It adds those results to the data frame and then returns it.
-#print "--Getting k 1d nearest neighbors in the average day dataframe."+'\n'
+## If num_matches is 5, the returned dataframe will have 5 additional columns. Each one containing the closest match,
+## next closest match etc
 weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_daily_dataframe, num_matches, exclude_days)
 
 
@@ -209,21 +219,28 @@ weather_daily_dataframe=wam.add_k_1d_nearest_neighbors_to_dataframe(weather_dail
 ## This function takes a df of interval data (multiple readings per day)
 ## and slices it down to the given dates and returns a df representing a single day
 ## with the average weekday, average weekend, peak day, and min day
-#print "--Getting the average day metrics for weather in the performance period"+'\n'
+
+## I MAY HAVE TO DO THIS ON A MONTHLY BASIS.
+## this functino could potentially return a list of dataframes, each one an average day profile for each
+## calendar month within the performance period.
+## Alternatively I could just do the average operating profile stuff completely within excel.
+## I think I'm going to go that route. I would print the performance period interval data to the output spreadsheet,
+## link it to the template, and then just slice it up there. Using dates entered by the user. That way they don't even have to be
+## calendar months. 
 weather_average_day_profile_dataframe_pp=wam.average_daily_metrics(weather_interval_dataframe, start_date_pp, end_date_pp, 'WetBulbTemp')
 
-print "--Printing results to excel workbook object"+'\n'
+print ("--Printing results to excel workbook object"+'\n')
 
 ## print wetaher daily dataframe to the excel sheet so we can see the similar days assigned to each day
 #print "--Printing similar day data to spreadsheet object"+'\n'
 weather_daily_dataframe.to_excel(output_book,"WBTSimDays")
 
 ## Write to excel object
-#print "--Printing weather average day to excel object"+'\n'
 weather_average_day_profile_dataframe_pp.to_excel(output_book,"WBTAveDay")
 
 
 ##############################-------ENERGY AVERAGE DAY STATS---------#######################
+#Same as a above, I have to do this monthly, I might just move it over to excel.
 
 print "--Calculating average day operating profile metrics"+'\n'
 energy_interval_dataframe=wam.prepare_dataframe_for_grouping_by_time(energy_interval_dataframe_all, start_date_all, end_date_all)
@@ -235,7 +252,6 @@ energy_interval_dataframe['DayType']=energy_interval_dataframe[energy_interval_d
 
 ## Getting this right involves making the column names unique for each set. Should be easy
 ## Just use the first couple chars of item as column heading.
-#print "--Getting average day energy profile metrics"+'\n'
 df_ave_day_list=[]
 for item in column_headings:
     energy_average_day_profile_dataframe_pp=wam.average_daily_metrics(energy_interval_dataframe, start_date_pp, end_date_pp, item)

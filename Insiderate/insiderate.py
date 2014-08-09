@@ -105,9 +105,10 @@ print ("--Read weather data successfully."+'\n')
 ##############################-----------GET ENERGY DATA------------#########################
 
 ## book_name is the file path given by the user earlier.
+print ("--Reading in energy data"+'\n')
+
 wb = pd.ExcelFile(book_name)
 
-print ("--Reading in energy data"+'\n')
 energy_interval_dataframe_all=wb.parse(wb.sheet_names[0])
 
 ## Get the number of columns of actual data (aka exclude the timestamp column)
@@ -187,7 +188,7 @@ else:
 
 ##############################-------ANALYZING THE WEATHER---------#######################
 
-print ("--Analyzing weather data"+'\n')
+print ("\n--Analyzing weather data"+'\n')
 
 ## Preparing data from for grouping by various time based criteria
 
@@ -307,7 +308,13 @@ energy_band_performance_metrics_all_df=pd.DataFrame(energy_band_performance_metr
 
 
 print "--Getting bucketed usage"+'\n'
-bucketed_usage_df, start_stop_list_all=wam.bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_cols, end_date_pp, column_headings, debug, divider)
+bucketed_usage_df, start_stop_list_all=wam.bucketed_usage_wrapper(energy_interval_dataframe,
+                                                                  df_ave_day_list,
+                                                                  num_data_cols,
+                                                                  end_date_pp,
+                                                                  column_headings,
+                                                                  debug,
+                                                                  divider)
 # start stop list all is a list with one entry for each stream, the entry containing two dates (start and stop)
 
 

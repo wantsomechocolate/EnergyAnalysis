@@ -449,13 +449,14 @@ def get_bucket_date_range_from_user(end_date=""):
 
 
 
-def get_operating_hours_from_user(debug=False):
+def get_operating_hours_from_user(time_range_for_plotting_average_day,debug=False):
 
     re_time_hh_mm='[012][0123456789]:[012345][1234567890]'
 
-    bucket_start_day_text="00:00"
+    #bucket_start_day_text="00:00"
 
-    bucket_end_day_text="23:45"
+    #bucket_end_day_text="23:45"
+    minutes_per_reading=60/(len(time_range_for_plotting_average_day)/24)
 
     start_stop_list=[]
 
@@ -497,8 +498,10 @@ def get_operating_hours_from_user(debug=False):
         
 
 
-    bucket_start_day=parser.parse(bucket_start_day_text)
-    bucket_end_day=parser.parse(bucket_end_day_text)
+    #bucket_start_day=parser.parse(bucket_start_day_text)
+    bucket_start_day=parser.parse(str(time_range_for_plotting_average_day[0].hour)+':'+str(time_range_for_plotting_average_day[0].hour))
+    #bucket_end_day=parser.parse(bucket_end_day_text)
+    bucket_end_day=parser.parse(str(time_range_for_plotting_average_day[-1].hour)+':'+str(time_range_for_plotting_average_day[0].hour))
     
     bucket_closed_to_open_time=parser.parse(bucket_closed_to_open_text)
     bucket_open_to_closed_time=parser.parse(bucket_open_to_closed_text)
@@ -532,7 +535,7 @@ def get_operating_hours_from_user(debug=False):
             else:
                 bucket_open_closed.append(0)
                 
-        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=15)    
+        bucket_current_time=bucket_current_time+datetime.timedelta(minutes=minutes_per_reading)    
 
     return bucket_open_closed, start_stop_list
     
@@ -549,13 +552,20 @@ def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_d
     intermediate_week_open=0
     intermediate_week_closed=0
 
+    #print(interval_usage_by_day_def)
+
     for i in range(start_date_index_def, end_date_index_def):
         
         if date_list_def[i].isoweekday()<6:
 
             for j in range(len(bucket_operating_hours_by_day_def[i-start_date_index_def])):
                 if bucket_operating_hours_by_day_def[i-start_date_index_def][j]==1:
+##                    print "interval_usage_by_day[i][j]"
+##                    print interval_usage_by_day_def[i][j]
+##                    intermediate_week_open+=interval_usage_by_day_def[i][j]
                     try:
+##                        print "interval_usage_by_day[i][j]"
+##                        print interval_usage_by_day_def[i][j]
                         intermediate_week_open+=interval_usage_by_day_def[i][j]
                     except:
                         print "Interval Usage did not evaluate to be an integer"
@@ -564,7 +574,12 @@ def get_bucketed_usage(bucket_operating_hours_by_day_def, date_list_def, start_d
                         print "Time: ",
                         print (j+1)/4.0
                 else:
+##                    print "interval_usage_by_day[i][j]"
+##                    print interval_usage_by_day_def[i][j]
+##                    intermediate_week_closed+=interval_usage_by_day_def[i][j]
                     try:
+##                        print "interval_usage_by_day[i][j]"
+##                        print interval_usage_by_day_def[i][j]
                         intermediate_week_closed+=interval_usage_by_day_def[i][j] ##------------What the fuck is going on
                     except:
                         print "Interval Usage did not evaluate to be an integer",
@@ -752,8 +767,9 @@ def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_
     #------------------------------------------------------------------------
     start_time_for_plotting_average_day=datetime.datetime(2000,1,1,0,0)
     time_range_for_plotting_average_day=[]
-    for i in range(96):
-        time_range_for_plotting_average_day.append(start_time_for_plotting_average_day+datetime.timedelta(minutes=15*i))
+    minutes_per_reading=60/(len(df_ave_day_list[0])/24)
+    for i in range(len(df_ave_day_list[0])):
+        time_range_for_plotting_average_day.append(start_time_for_plotting_average_day+datetime.timedelta(minutes=minutes_per_reading*i))
     #------------------------------------------------------------------------
 
     ## Bucket analysis
@@ -809,11 +825,11 @@ def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_
 
 
 
-        ## Instead of the open closed bs, as "What time does the building go from closed to open?"
+        ## Instead of the open closed bs, ask "What time does the building go from closed to open?"
         ## and "What time does the building go from open to closed?"
 
 
-        bucket_open_closed_hours, start_stop_list=wam.get_operating_hours_from_user(debug=debug)
+        bucket_open_closed_hours, start_stop_list=wam.get_operating_hours_from_user(time_range_for_plotting_average_day,debug=debug)
         start_stop_list_all.append(start_stop_list)
 
         ## This makes matrix of the right size with the state of open or closed for each hour EACH DAY, in case we ever want to have them change
@@ -821,6 +837,12 @@ def bucketed_usage_wrapper(energy_interval_dataframe, df_ave_day_list, num_data_
         for i in range((bucket_date_range[1]-bucket_date_range[0]).days):
             bucket_operating_hours_by_day.append(bucket_open_closed_hours)
 
+##        print "length of bucket_operating_hours_by_day"
+##        print len(bucket_operating_hours_by_day)
+##        print "length of date_list"
+##        print len(date_list)
+##        print "length of int_data_by_day"
+##        print len(int_data_by_day)
 
         bucketed_usage=wam.get_bucketed_usage(bucket_operating_hours_by_day, date_list, start_date_index, end_date_index, int_data_by_day)
 
@@ -913,7 +935,7 @@ def get_lower_and_upper_bound_dates(exclude_days, weather_interval_dataframe_all
         or I can change the lower_bound_date"+"\n")
 
     if exclude_days_end>=upper_bound_date.date():
-        print ("--The excluded days go far enough to cover the upper bound date"+"\n"
+        print ("--The excluded days go far enough to cover the upper bound date"+"\n")
     else:
         print ("--The excluded days do not go far enough to cover the upper bound date, which is "+
                str(upper_bound_date)+"."+"\n")
